@@ -322,11 +322,66 @@
       text-transform: uppercase;
       color: #E0F2FE;
     }
-    .board-sub {
+   .board-sub {
       font-size: 10px;
       font-weight: 700;
       color: #7DD3FC;
       opacity: 0.85;
+    }
+
+    .enemy-fleet-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 5px 8px;
+      margin-bottom: 6px;
+      border-radius: 9px;
+      background: rgba(2, 12, 24, 0.58);
+      border: 1px solid rgba(125, 211, 252, 0.16);
+    }
+    .fleet-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .mini-ship {
+      position: relative;
+      display: inline-flex;
+      gap: 1.5px;
+      padding: 2px;
+      border-radius: 4px;
+      background: rgba(239, 68, 68, 0.18);
+      border: 1px solid rgba(248, 113, 113, 0.45);
+      transition: opacity 0.25s ease, background 0.25s ease;
+    }
+    .mini-deck {
+      width: 6px;
+      height: 6px;
+      border-radius: 1.5px;
+      background: #F87171;
+      box-shadow: 0 0 4px rgba(248, 113, 113, 0.65);
+    }
+    .mini-ship.sunk {
+      opacity: 0.3;
+      background: rgba(15, 23, 42, 0.6);
+      border-color: rgba(148, 163, 184, 0.25);
+    }
+    .mini-ship.sunk .mini-deck {
+      background: #64748B;
+      box-shadow: none;
+    }
+    .mini-ship.sunk::after {
+      content: "";
+      position: absolute;
+      left: 1px;
+      right: 1px;
+      top: 50%;
+      height: 1.5px;
+      background: #EF4444;
+      transform: rotate(-12deg);
+    }
     }
 
     /* Квадратная сцена 10x10 */
@@ -568,6 +623,7 @@
         <span class="board-title">🎯 Сектор врага</span>
         <span class="board-sub">Тапни по клетке для залпа</span>
       </div>
+      <div class="enemy-fleet-strip" id="enemyFleetStrip"></div>
       <div class="grid-stage" id="enemyStage">
         <div class="grid-cells" id="enemyGrid"></div>
         <div class="ships-layer" id="enemyShipsLayer"></div>
@@ -1489,11 +1545,38 @@
       });
     }
 
+    function renderEnemyFleetStrip() {
+      const strip = document.getElementById('enemyFleetStrip');
+      if (!strip || !enemyShips) return;
+      strip.innerHTML = '';
+
+      [4, 3, 2, 1].forEach(len => {
+        const group = document.createElement('div');
+        group.className = 'fleet-group';
+        const shipsOfType = enemyShips
+          .filter(s => s.len === len)
+          .sort((a, b) => Number(a.sunk) - Number(b.sunk));
+
+        shipsOfType.forEach(s => {
+          const el = document.createElement('div');
+          el.className = 'mini-ship' + (s.sunk ? ' sunk' : '');
+          for (let i = 0; i < len; i++) {
+            const deck = document.createElement('span');
+            deck.className = 'mini-deck';
+            el.appendChild(deck);
+          }
+          group.appendChild(el);
+        });
+        strip.appendChild(group);
+      });
+    }
+
     function updateHud() {
       const myAlive = myShips.filter(s => !s.sunk).length;
       const enemyAlive = enemyShips.filter(s => !s.sunk).length;
       document.getElementById('myCount').textContent = `Ты: ${myAlive}`;
       document.getElementById('enemyCount').textContent = `Враг: ${enemyAlive}`;
+      renderEnemyFleetStrip();
 
       const dot = document.getElementById('turnDot');
       const txt = document.getElementById('turnText');
