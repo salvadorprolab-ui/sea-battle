@@ -1,1 +1,1574 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Морской Бой: Битва Моряков</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=JetBrains+Mono:wght@600;800&family=Montserrat:wght@600;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper-bg: #F6F2E6;
+      --grid-line: rgba(45, 110, 185, 0.22);
+      --margin-red: rgba(217, 56, 41, 0.35);
+      --ink-blue: #182C52;
+      --ink-soft: #4A5F85;
+      --ink-red: #D93829;
+      --ink-accent: #E86A17;
+      --sea-water: #2B7DE9;
+      --sunk-dark: #1E293B;
+    }
 
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100dvh;
+      background-color: var(--paper-bg);
+      background-image:
+        linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+      background-size: 22px 22px;
+      color: var(--ink-blue);
+      font-family: 'Montserrat', -apple-system, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Красная вертикальная линия тетрадного поля */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 14px;
+      width: 2px;
+      background: var(--margin-red);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 10px 10px calc(24px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Встряска экрана */
+    @keyframes screenShakeLight {
+      0%, 100% { transform: translate(0, 0); }
+      25% { transform: translate(-4px, 3px); }
+      50% { transform: translate(4px, -3px); }
+      75% { transform: translate(-3px, -2px); }
+    }
+    @keyframes screenShakeHeavy {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      15% { transform: translate(-7px, 5px) rotate(-0.8deg); }
+      30% { transform: translate(7px, -6px) rotate(0.8deg); }
+      45% { transform: translate(-6px, -4px) rotate(-0.5deg); }
+      60% { transform: translate(6px, 4px) rotate(0.5deg); }
+      80% { transform: translate(-3px, 2px) rotate(0deg); }
+    }
+    .shake-light { animation: screenShakeLight 0.28s cubic-bezier(.36,.07,.19,.97); }
+    .shake-heavy { animation: screenShakeHeavy 0.48s cubic-bezier(.36,.07,.19,.97); }
+
+    /* Шапка */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 4px 4px 0;
+    }
+    .brand {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.05;
+    }
+    .brand-title {
+      font-family: 'Caveat', cursive;
+      font-size: 27px;
+      font-weight: 700;
+      color: var(--ink-blue);
+      letter-spacing: 0.01em;
+    }
+    .brand-sub {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-red);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.78);
+      border: 2px solid var(--ink-blue);
+      border-radius: 10px;
+      padding: 6px 9px;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--ink-blue);
+      cursor: pointer;
+      box-shadow: 2px 2px 0 var(--ink-blue);
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    .icon-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 0 0 0 var(--ink-blue);
+    }
+    .icon-btn.active {
+      background: var(--ink-blue);
+      color: #fff;
+    }
+    .icon-btn.online-btn {
+      background: #FFF0EB;
+      border-color: var(--ink-red);
+      color: var(--ink-red);
+      box-shadow: 2px 2px 0 var(--ink-red);
+      font-size: 11px;
+    }
+
+    /* Статус хода + счётчик кораблей */
+    .hud-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 253, 247, 0.9);
+      border: 2px solid var(--ink-blue);
+      border-radius: 12px;
+      padding: 7px 11px;
+      box-shadow: 3px 3px 0 rgba(24, 44, 82, 0.15);
+    }
+    .turn-badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .turn-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #16A34A;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
+    }
+    .turn-dot.enemy {
+      background: var(--ink-red);
+      box-shadow: 0 0 0 3px rgba(217, 56, 41, 0.25);
+    }
+    .score-pills {
+      display: flex;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .score-pill {
+      padding: 3px 7px;
+      border-radius: 6px;
+      background: #E8EEF7;
+      color: var(--ink-blue);
+    }
+    .score-pill.enemy-left {
+      background: #FDE8E6;
+      color: var(--ink-red);
+    }
+
+    /* Плашка кинетической насмешки */
+    .taunt-stage {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .taunt-bubble {
+      width: 100%;
+      background: #182C52;
+      color: #FFFDF7;
+      border-radius: 12px;
+      padding: 9px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.3;
+      text-align: center;
+      box-shadow: 4px 4px 0 var(--ink-red);
+      transform: scale(1) rotate(-0.4deg);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s;
+    }
+    .taunt-bubble.pop {
+      animation: tauntPop 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .taunt-bubble.type-hit {
+      background: #B91C1C;
+      box-shadow: 4px 4px 0 #F59E0B;
+    }
+    .taunt-bubble.type-sink {
+      background: #111827;
+      box-shadow: 4px 4px 0 #EF4444;
+    }
+    .taunt-bubble.type-miss {
+      background: #1E3A5F;
+      box-shadow: 4px 4px 0 #60A5FA;
+    }
+    @keyframes tauntPop {
+      0% { transform: scale(0.84) rotate(2deg); }
+      60% { transform: scale(1.04) rotate(-1deg); }
+      100% { transform: scale(1) rotate(-0.4deg); }
+    }
+    .taunt-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.18);
+      margin-right: 6px;
+      vertical-align: middle;
+      letter-spacing: 0.06em;
+    }
+
+    /* ВЕРХНЕЕ БОЕВОЕ ПОЛЕ (МАКСИМАЛЬНЫЙ РАЗМЕР НА ВЕСЬ ЭКРАН) */
+    .board-wrapper {
+      position: relative;
+      background: rgba(255, 253, 248, 0.92);
+      border: 2.5px solid var(--ink-blue);
+      border-radius: 14px;
+      padding: 6px;
+      box-shadow: 4px 5px 0 var(--ink-blue);
+    }
+    .board-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+      padding: 0 2px;
+    }
+    .board-label {
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink-blue);
+    }
+    .board-hint {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--ink-soft);
+    }
+
+    .grid-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+    }
+
+    .battle-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      grid-template-rows: repeat(10, 1fr);
+      width: 100%;
+      height: 100%;
+      border: 2px solid var(--ink-blue);
+      background: #FAF8F2;
+    }
+
+    .cell {
+      position: relative;
+      border: 0.5px solid rgba(45, 110, 185, 0.34);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+      transition: background 0.12s ease;
+    }
+    .cell:active:not(.shot) {
+      background: rgba(43, 125, 233, 0.18);
+    }
+
+    /* Фоновые координаты прямо в клетке */
+    .cell-coord {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(8px, 2.3vw, 11px);
+      font-weight: 800;
+      color: rgba(24, 44, 82, 0.22);
+      pointer-events: none;
+      z-index: 1;
+      transition: opacity 0.2s;
+    }
+    .cell.shot .cell-coord {
+      opacity: 0.08;
+    }
+
+    /* Состояния клеток: МИМО */
+    .cell.miss {
+      background: rgba(43, 125, 233, 0.08);
+      cursor: default;
+    }
+    .cell.miss::after {
+      content: "";
+      position: absolute;
+      width: 34%;
+      height: 34%;
+      border-radius: 50%;
+      background: var(--sea-water);
+      opacity: 0.72;
+      animation: missDot 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 2;
+    }
+    @keyframes missDot {
+      0% { transform: scale(0); opacity: 0; }
+      70% { transform: scale(1.45); opacity: 0.9; }
+      100% { transform: scale(1); opacity: 0.72; }
+    }
+
+    /* Состояния клеток: РАНИЛ (ГОРЯЩИЙ КОРАБЛЬ) */
+    .cell.hit {
+      background: linear-gradient(180deg, rgba(254, 215, 170, 0.65), rgba(239, 68, 68, 0.45));
+      cursor: default;
+    }
+    .cell.hit::before {
+      content: "✕";
+      position: absolute;
+      font-size: clamp(16px, 4.8vw, 24px);
+      font-weight: 900;
+      color: var(--ink-red);
+      z-index: 2;
+      text-shadow: 0 0 6px rgba(255, 160, 0, 0.8);
+    }
+    .flame-core {
+      position: absolute;
+      bottom: 2px;
+      width: 66%;
+      height: 68%;
+      background: radial-gradient(circle at 50% 80%, #FEF08A 0%, #F97316 48%, rgba(220,38,38,0) 78%);
+      border-radius: 50% 50% 30% 30%;
+      filter: blur(0.4px);
+      animation: flameFlicker 0.42s infinite alternate ease-in-out;
+      pointer-events: none;
+      z-index: 3;
+    }
+    @keyframes flameFlicker {
+      0% { transform: scale(0.92, 0.95) translateY(1px); opacity: 0.85; }
+      100% { transform: scale(1.08, 1.15) translateY(-2px); opacity: 1; }
+    }
+
+    /* Состояния клеток: УБИЛ (ТОНУЩИЙ С ПУЗЫРЯМИ) */
+    .cell.sunk {
+      background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+      border-color: #334155;
+      cursor: default;
+      animation: sinkHull 0.65s ease-out;
+    }
+    .cell.sunk::before {
+      content: "☠";
+      position: absolute;
+      font-size: clamp(13px, 3.8vw, 18px);
+      color: rgba(255, 255, 255, 0.45);
+      z-index: 2;
+    }
+    @keyframes sinkHull {
+      0% { transform: scale(1.15) rotate(-5deg); background: #EF4444; }
+      50% { transform: scale(0.92) rotate(3deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    .bubble {
+      position: absolute;
+      bottom: -4px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(147, 197, 253, 0.85);
+      background: rgba(191, 219, 254, 0.3);
+      animation: riseBubble 1.8s infinite ease-in;
+      pointer-events: none;
+      z-index: 4;
+    }
+    @keyframes riseBubble {
+      0% { transform: translateY(0) scale(0.5); opacity: 0; }
+      20% { opacity: 0.95; }
+      100% { transform: translateY(-28px) scale(1.15); opacity: 0; }
+    }
+
+    /* Canvas слой для взрывов, всплесков, дыма и пузырей */
+    #fxCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Панель микрофона и голосового выстрела */
+    .voice-dock {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mic-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 16px;
+      background: var(--ink-blue);
+      color: #FFFDF7;
+      border: 2.5px solid var(--ink-blue);
+      border-radius: 14px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #0C1830;
+      transition: transform 0.1s, background 0.15s;
+    }
+    .mic-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #0C1830;
+    }
+    .mic-btn.listening {
+      background: var(--ink-red);
+      border-color: #7F1D1D;
+      box-shadow: 0 0 0 5px rgba(217, 56, 41, 0.25);
+      animation: micPulse 1s infinite;
+    }
+    @keyframes micPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.015); }
+    }
+    .new-game-btn {
+      padding: 13px 14px;
+      background: rgba(255,255,255,0.88);
+      border: 2.5px solid var(--ink-blue);
+      border-radius: 14px;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 rgba(24,44,82,0.22);
+    }
+
+    /* НИЖНЯЯ СЕКЦИЯ: МОЙ ФЛОТ + ИСТОРИЯ ВЫСТРЕЛОВ */
+    .lower-deck {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .mini-card {
+      background: rgba(255, 253, 248, 0.92);
+      border: 2px solid var(--ink-blue);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 3px 3px 0 rgba(24, 44, 82, 0.16);
+      display: flex;
+      flex-direction: column;
+    }
+    .mini-title {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink-blue);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .my-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      grid-template-rows: repeat(10, 1fr);
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border: 1.5px solid var(--ink-blue);
+      background: #FAF8F2;
+    }
+    .my-cell {
+      border: 0.5px solid rgba(45, 110, 185, 0.25);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .my-cell.ship {
+      background: rgba(24, 44, 82, 0.78);
+      border-color: rgba(255,255,255,0.25);
+    }
+    .my-cell.miss::after {
+      content: "";
+      width: 36%;
+      height: 36%;
+      border-radius: 50%;
+      background: var(--sea-water);
+      opacity: 0.7;
+    }
+    .my-cell.hit {
+      background: #EA580C;
+    }
+    .my-cell.hit::after {
+      content: "✕";
+      color: #FEF08A;
+      font-size: 9px;
+      font-weight: 900;
+    }
+    .my-cell.sunk {
+      background: #0F172A;
+    }
+    .my-cell.sunk::after {
+      content: "✕";
+      color: #EF4444;
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    /* История выстрелов */
+    .history-list {
+      flex: 1;
+      max-height: 168px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding-right: 2px;
+    }
+    .history-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 5px 7px;
+      border-radius: 8px;
+      background: #F1ECE0;
+      font-size: 11px;
+      font-weight: 700;
+      border-left: 3px solid var(--sea-water);
+    }
+    .history-item.hit { border-left-color: #EA580C; background: #FFF2E8; }
+    .history-item.sunk { border-left-color: #111827; background: #E5E7EB; }
+    .history-item.enemy-shot { opacity: 0.85; border-left-style: dashed; }
+    .hist-coord {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 11px;
+    }
+    .hist-res {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    /* Модалка Онлайн / Конец игры */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.68);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-box {
+      background: var(--paper-bg);
+      border: 3px solid var(--ink-blue);
+      border-radius: 18px;
+      padding: 20px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 6px 6px 0 var(--ink-blue);
+      text-align: center;
+    }
+    .modal-title {
+      font-family: 'Caveat', cursive;
+      font-size: 32px;
+      margin: 0 0 8px;
+      color: var(--ink-blue);
+    }
+    .modal-text {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--ink-soft);
+      margin: 0 0 16px;
+      font-weight: 600;
+    }
+    .room-input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 2px solid var(--ink-blue);
+      border-radius: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 800;
+      text-align: center;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .modal-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 2px solid var(--ink-blue);
+      background: var(--ink-blue);
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+    .modal-btn.secondary {
+      background: #fff;
+      color: var(--ink-blue);
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="appRoot">
+    <!-- Шапка -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-title">Битва Моряков</span>
+        <span class="brand-sub">Морской Бой · WebView</span>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="btnSea" title="Шум моря">🌊</button>
+        <button class="icon-btn active" id="btnVoice" title="Озвучка насмешек">🔊</button>
+        <button class="icon-btn online-btn" id="btnOnline">⚡ ОНЛАЙН</button>
+      </div>
+    </header>
+
+    <!-- Статус и счёт -->
+    <div class="hud-strip">
+      <div class="turn-badge">
+        <span class="turn-dot" id="turnDot"></span>
+        <span id="turnText">Твой залп, капитан</span>
+      </div>
+      <div class="score-pills">
+        <span class="score-pill" id="myShipsLeft">Ты: 10</span>
+        <span class="score-pill enemy-left" id="enemyShipsLeft">Враг: 10</span>
+      </div>
+    </div>
+
+    <!-- Кинетическая фраза-насмешка -->
+    <div class="taunt-stage">
+      <div class="taunt-bubble" id="tauntBubble">
+        <span class="taunt-tag">БОЦМАН</span>
+        <span id="tauntText">Жми на клетку или диктуй в микрофон. Посмотрим, чего ты стоишь.</span>
+      </div>
+    </div>
+
+    <!-- ВЕРХНЕЕ ПОЛЕ: БОЕВОЕ (КУДА СТРЕЛЯЕМ) -->
+    <section class="board-wrapper">
+      <div class="board-header-row">
+        <span class="board-label">🎯 Боевое поле (Сектор врага)</span>
+        <span class="board-hint">Назови координату или тапни</span>
+      </div>
+      <div class="grid-frame">
+        <div class="battle-grid" id="enemyGrid"></div>
+        <canvas id="fxCanvas"></canvas>
+      </div>
+    </section>
+
+    <!-- Микрофон и рестарт -->
+    <div class="voice-dock">
+      <button class="mic-btn" id="btnMic">
+        <span>🎙️</span>
+        <span id="micLabel">Сказать координату (напр. «Б 4»)</span>
+      </button>
+      <button class="new-game-btn" id="btnRestart" title="Новая партия">🔄</button>
+    </div>
+
+    <!-- НИЖНЯЯ ПАЛУБА: МОЙ ФЛОТ + ИСТОРИЯ ВЫСТРЕЛОВ -->
+    <section class="lower-deck">
+      <div class="mini-card">
+        <div class="mini-title">
+          <span>⚓ Твой флот</span>
+          <span style="color:var(--ink-soft)">10 кораблей</span>
+        </div>
+        <div class="my-grid" id="myGrid"></div>
+      </div>
+
+      <div class="mini-card">
+        <div class="mini-title">
+          <span>📜 История выстрелов</span>
+          <span id="shotCount" style="color:var(--ink-red)">0</span>
+        </div>
+        <div class="history-list" id="historyList">
+          <div style="font-size:11px; color:var(--ink-soft); text-align:center; padding-top:24px; font-weight:600;">
+            Пока тихо.<br>Первый залп за тобой.
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Модалка Онлайн-сессии (WebSocket) -->
+  <div class="modal-backdrop" id="onlineModal">
+    <div class="modal-box">
+      <h3 class="modal-title">Дуэль на 2 смартфона</h3>
+      <p class="modal-text">
+        В прототипе v0.1 игра идёт против умного бота. Для живой дуэли через WebSocket в Telegram подключим сервер комнат — ниже готовый интерфейс входа по коду.
+      </p>
+      <input class="room-input" id="roomCodeInput" placeholder="КОД КАЮТЫ (НАПР. M-402)" maxlength="8" />
+      <button class="modal-btn" id="btnCreateRoom">Создать каюту (WebSocket)</button>
+      <button class="modal-btn secondary" id="btnCloseOnline">Вернуться к бою с ботом</button>
+    </div>
+  </div>
+
+  <!-- Модалка Финала -->
+  <div class="modal-backdrop" id="endModal">
+    <div class="modal-box">
+      <h3 class="modal-title" id="endTitle">Победа!</h3>
+      <p class="modal-text" id="endDesc"></p>
+      <button class="modal-btn" id="btnPlayAgain">Сыграть ещё раз</button>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. TELEGRAM WEBAPP & HAPTICS
+    // =========================================================================
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      try {
+        tg.expand();
+        tg.ready();
+        if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+      } catch (e) {}
+    }
+
+    function haptic(type) {
+      try {
+        if (!tg?.HapticFeedback) return;
+        if (['success', 'warning', 'error'].includes(type)) {
+          tg.HapticFeedback.notificationOccurred(type);
+        } else {
+          tg.HapticFeedback.impactOccurred(type);
+        }
+      } catch (e) {}
+    }
+
+    // =========================================================================
+    // 2. ЦИНИЧНЫЕ НАСМЕШКИ (ВЗРОСЛЫЙ ТОН, БЕЗ МАТА)
+    // =========================================================================
+    const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'З', 'И', 'К'];
+
+    const TAUNTS = {
+      playerMiss: [
+        "Мимо. Чайки аплодируют стоя.",
+        "В молоко, салага. Тебе бы прицел протереть.",
+        "Эх, морячок… линейку приложить?",
+        "Красивый всплеск. Бесполезный, но красивый.",
+        "Пустая вода. Ты рыбу глушишь или воюешь?",
+        "С такой точностью только на диване командовать.",
+        "Мимо. Соперник даже кофе не расплескал."
+      ],
+      playerHit: [
+        "Попал! Запахло палёной тельняшкой.",
+        "Ранил! Тащи ведро, сейчас зальёт.",
+        "Ой, больно? Это мы ещё не пристрелялись.",
+        "Есть пробоина! Кто-то плохо прятал своё корыто.",
+        "Горячо! Кажется, у кого-то подгорает не только палуба.",
+        "Точно в борт. Продолжай, не давай опомниться."
+      ],
+      playerSink: [
+        "Убил! Передавай привет крабам.",
+        "На дно! Красиво булькает, правда?",
+        "Минус один. И это ты называл флотом?",
+        "Всё, отплавался. Суши вёсла, теоретик.",
+        "Пошёл пузырями! Дорогой получился металлолом."
+      ],
+      enemyMiss: [
+        "Враг мажет. Видимо, стреляет с закрытыми глазами.",
+        "Мимо тебя! Ему бы компас починить.",
+        "Вокруг да около. Твой ход, покажи как надо."
+      ],
+      enemyHit: [
+        "Прилетело! Не стой столбом, отвечай.",
+        "Тебе борт поцарапали. Обидно, да?",
+        "Твой корабль горит, а ты на него любуешься.",
+        "Ауч! Тебя нащупали, морячок."
+      ],
+      enemySink: [
+        "Твой корабль пошёл к рыбам. Соберись!",
+        "Минус твой борт. Пузыри красивые, но не в твою пользу.",
+        "Потопили! Хватит подставляться."
+      ]
+    };
+
+    const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+    // =========================================================================
+    // 3. ПРОЦЕДУРНЫЙ ЗВУК (WEB AUDIO API) + ОЗВУЧКА РЕПЛИК
+    // =========================================================================
+    let audioCtx = null;
+    let seaNode = null;
+    let seaPlaying = false;
+    let voiceEnabled = true;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function toggleSeaAmbience() {
+      ensureAudio();
+      if (!audioCtx) return;
+      const btn = document.getElementById('btnSea');
+      if (seaPlaying) {
+        try { seaNode.stop(); } catch (e) {}
+        seaNode = null;
+        seaPlaying = false;
+        btn.classList.remove('active');
+        return;
+      }
+      const bufferSize = audioCtx.sampleRate * 3;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      let lastOut = 0.0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        data[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = data[i];
+        data[i] *= 2.4;
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
+      noise.loop = true;
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 340;
+
+      const lfo = audioCtx.createOscillator();
+      lfo.frequency.value = 0.16;
+      const lfoGain = audioCtx.createGain();
+      lfoGain.gain.value = 180;
+      lfo.connect(lfoGain);
+      lfoGain.connect(filter.frequency);
+
+      const master = audioCtx.createGain();
+      master.gain.value = 0.16;
+
+      noise.connect(filter);
+      filter.connect(master);
+      master.connect(audioCtx.destination);
+
+      noise.start();
+      lfo.start();
+      seaNode = noise;
+      seaPlaying = true;
+      btn.classList.add('active');
+    }
+
+    function playSplashSfx() {
+      ensureAudio();
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const bufferSize = audioCtx.sampleRate * 0.35;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+      const src = audioCtx.createBufferSource();
+      src.buffer = buffer;
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1100, now);
+      filter.frequency.exponentialRampToValueAtTime(280, now + 0.32);
+
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.32, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.34);
+
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+      src.start(now);
+    }
+
+    function playExplosionSfx(heavy = false) {
+      ensureAudio();
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const dur = heavy ? 0.72 : 0.45;
+
+      // Суб-бас удар
+      const osc = audioCtx.createOscillator();
+      const oscGain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(heavy ? 115 : 140, now);
+      osc.frequency.exponentialRampToValueAtTime(28, now + dur);
+      oscGain.gain.setValueAtTime(heavy ? 0.48 : 0.36, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      osc.connect(oscGain);
+      oscGain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + dur);
+
+      // Треск взрыва
+      const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buf;
+      const filt = audioCtx.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.setValueAtTime(heavy ? 950 : 750, now);
+      filt.frequency.exponentialRampToValueAtTime(90, now + dur);
+      const nGain = audioCtx.createGain();
+      nGain.gain.setValueAtTime(heavy ? 0.5 : 0.35, now);
+      nGain.gain.exponentialRampToValueAtTime(0.01, now + dur);
+      noise.connect(filt);
+      filt.connect(nGain);
+      nGain.connect(audioCtx.destination);
+      noise.start(now);
+    }
+
+    function playBubblesSfx() {
+      ensureAudio();
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      for (let i = 0; i < 6; i++) {
+        const t = now + 0.15 + i * 0.11;
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'sine';
+        const base = 240 + Math.random() * 220;
+        osc.frequency.setValueAtTime(base, t);
+        osc.frequency.exponentialRampToValueAtTime(base * 2.1, t + 0.09);
+        g.gain.setValueAtTime(0.14, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        osc.connect(g);
+        g.connect(audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.11);
+      }
+    }
+
+    function speakTaunt(text) {
+      if (!voiceEnabled || !('speechSynthesis' in window)) return;
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'ru-RU';
+        u.rate = 1.08;
+        u.pitch = 0.86;
+        window.speechSynthesis.speak(u);
+      } catch (e) {}
+    }
+
+    // =========================================================================
+    // 4. CANVAS МОУШН-ДВИЖОК (ВЗРЫВЫ, ВСПЛЕСКИ, ДЫМ, ПУЗЫРИ)
+    // =========================================================================
+    const canvas = document.getElementById('fxCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let rings = [];
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function cellCenter(r, c) {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const cw = rect.width / 10;
+      const ch = rect.height / 10;
+      return { x: (c + 0.5) * cw, y: (r + 0.5) * ch, cw };
+    }
+
+    function spawnSplashFx(r, c) {
+      const { x, y } = cellCenter(r, c);
+      rings.push({ x, y, r: 4, maxR: 26, alpha: 0.9, color: '#2B7DE9', lw: 2.5 });
+      rings.push({ x, y, r: 2, maxR: 16, alpha: 0.7, color: '#93C5FD', lw: 1.5 });
+      for (let i = 0; i < 14; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = 1.2 + Math.random() * 2.5;
+        particles.push({
+          x, y,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 0.8,
+          size: 2 + Math.random() * 3,
+          color: Math.random() > 0.4 ? '#3B82F6' : '#E0F2FE',
+          alpha: 1,
+          decay: 0.032,
+          gravity: 0.09
+        });
+      }
+    }
+
+    function spawnExplosionFx(r, c, heavy = false) {
+      const { x, y } = cellCenter(r, c);
+      rings.push({
+        x, y, r: 4,
+        maxR: heavy ? 48 : 34,
+        alpha: 1,
+        color: '#F97316',
+        lw: heavy ? 4 : 3
+      });
+      const count = heavy ? 32 : 20;
+      const colors = ['#FEF08A', '#F97316', '#EF4444', '#1F2937'];
+      for (let i = 0; i < count; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = 1.5 + Math.random() * (heavy ? 4.8 : 3.4);
+        particles.push({
+          x, y,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          size: (heavy ? 3.5 : 2.5) + Math.random() * 4.5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          alpha: 1,
+          decay: 0.022 + Math.random() * 0.018,
+          gravity: 0.04
+        });
+      }
+    }
+
+    function animateFx() {
+      const w = canvas.width / window.devicePixelRatio;
+      const h = canvas.height / window.devicePixelRatio;
+      ctx.clearRect(0, 0, w, h);
+
+      for (let i = rings.length - 1; i >= 0; i--) {
+        const rg = rings[i];
+        rg.r += (rg.maxR - rg.r) * 0.18;
+        rg.alpha -= 0.045;
+        if (rg.alpha <= 0) { rings.splice(i, 1); continue; }
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(rg.x, rg.y, rg.r, 0, Math.PI * 2);
+        ctx.strokeStyle = rg.color;
+        ctx.globalAlpha = rg.alpha;
+        ctx.lineWidth = rg.lw;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.alpha -= p.decay;
+        if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      requestAnimationFrame(animateFx);
+    }
+
+    // =========================================================================
+    // 5. ИГРОВАЯ ЛОГИКА МОРСКОГО БОЯ
+    // =========================================================================
+    const SHIP_SIZES = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
+
+    let enemyBoard, myBoard;
+    let enemyShips, myShips;
+    let isPlayerTurn = true;
+    let gameOver = false;
+    let shotCounter = 0;
+    let botTargets = [];
+
+    function createEmptyBoard() {
+      return Array.from({ length: 10 }, () =>
+        Array.from({ length: 10 }, () => ({ shipId: null, state: 'empty' }))
+      );
+    }
+
+    function placeFleetRandomly() {
+      const board = createEmptyBoard();
+      const ships = [];
+
+      for (let id = 0; id < SHIP_SIZES.length; id++) {
+        const len = SHIP_SIZES[id];
+        let placed = false;
+        for (let attempt = 0; attempt < 300 && !placed; attempt++) {
+          const horiz = Math.random() < 0.5;
+          const r = Math.floor(Math.random() * (horiz ? 10 : 11 - len));
+          const c = Math.floor(Math.random() * (horiz ? 11 - len : 10));
+
+          let ok = true;
+          for (let i = 0; i < len && ok; i++) {
+            const nr = horiz ? r : r + i;
+            const nc = horiz ? c + i : c;
+            for (let dr = -1; dr <= 1; dr++) {
+              for (let dc = -1; dc <= 1; dc++) {
+                const tr = nr + dr, tc = nc + dc;
+                if (tr >= 0 && tr < 10 && tc >= 0 && tc < 10 && board[tr][tc].shipId !== null) {
+                  ok = false;
+                }
+              }
+            }
+          }
+
+          if (ok) {
+            const cells = [];
+            for (let i = 0; i < len; i++) {
+              const nr = horiz ? r : r + i;
+              const nc = horiz ? c + i : c;
+              board[nr][nc].shipId = id;
+              cells.push({ r: nr, c: nc });
+            }
+            ships.push({ id, len, cells, hits: 0, sunk: false });
+            placed = true;
+          }
+        }
+      }
+      return { board, ships };
+    }
+
+    function markHaloAroundShip(board, ship) {
+      ship.cells.forEach(({ r, c }) => {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const tr = r + dr, tc = c + dc;
+            if (tr >= 0 && tr < 10 && tc >= 0 && tc < 10 && board[tr][tc].state === 'empty') {
+              board[tr][tc].state = 'miss';
+            }
+          }
+        }
+      });
+    }
+
+    function showTaunt(tag, text, type = '') {
+      const bubble = document.getElementById('tauntBubble');
+      bubble.className = 'taunt-bubble ' + (type ? 'type-' + type : '');
+      bubble.innerHTML = `<span class="taunt-tag">${tag}</span><span>${text}</span>`;
+      void bubble.offsetWidth;
+      bubble.classList.add('pop');
+      speakTaunt(text);
+    }
+
+    function triggerScreenShake(heavy = false) {
+      const root = document.getElementById('appRoot');
+      root.classList.remove('shake-light', 'shake-heavy');
+      void root.offsetWidth;
+      root.classList.add(heavy ? 'shake-heavy' : 'shake-light');
+    }
+
+    function addHistoryEntry(who, coordStr, resultType, label) {
+      shotCounter++;
+      document.getElementById('shotCount').textContent = shotCounter;
+      const list = document.getElementById('historyList');
+      if (shotCounter === 1) list.innerHTML = '';
+
+      const item = document.createElement('div');
+      item.className = `history-item ${resultType} ${who === 'enemy' ? 'enemy-shot' : ''}`;
+      item.innerHTML = `
+        <span class="hist-coord">${who === 'me' ? '🎯' : '💣'} ${coordStr}</span>
+        <span class="hist-res">${label}</span>
+      `;
+      list.prepend(item);
+    }
+
+    function updateHud() {
+      const myAlive = myShips.filter(s => !s.sunk).length;
+      const enemyAlive = enemyShips.filter(s => !s.sunk).length;
+      document.getElementById('myShipsLeft').textContent = `Ты: ${myAlive}`;
+      document.getElementById('enemyShipsLeft').textContent = `Враг: ${enemyAlive}`;
+
+      const dot = document.getElementById('turnDot');
+      const txt = document.getElementById('turnText');
+      if (isPlayerTurn) {
+        dot.classList.remove('enemy');
+        txt.textContent = 'Твой залп, капитан';
+      } else {
+        dot.classList.add('enemy');
+        txt.textContent = 'Соперник целится…';
+      }
+    }
+
+    function renderBoards() {
+      const eGrid = document.getElementById('enemyGrid');
+      eGrid.innerHTML = '';
+      for (let r = 0; r < 10; r++) {
+        for (let c = 0; c < 10; c++) {
+          const cellData = enemyBoard[r][c];
+          const el = document.createElement('div');
+          el.className = 'cell';
+          if (cellData.state !== 'empty') {
+            el.classList.add('shot', cellData.state);
+          }
+
+          const coord = document.createElement('span');
+          coord.className = 'cell-coord';
+          coord.textContent = `${LETTERS[c]}${r + 1}`;
+          el.appendChild(coord);
+
+          if (cellData.state === 'hit') {
+            const flame = document.createElement('div');
+            flame.className = 'flame-core';
+            el.appendChild(flame);
+          } else if (cellData.state === 'sunk') {
+            for (let b = 0; b < 3; b++) {
+              const bub = document.createElement('div');
+              bub.className = 'bubble';
+              const sz = 4 + b * 2;
+              bub.style.width = sz + 'px';
+              bub.style.height = sz + 'px';
+              bub.style.left = (18 + b * 26) + '%';
+              bub.style.animationDelay = (b * 0.55) + 's';
+              el.appendChild(bub);
+            }
+          }
+
+          el.addEventListener('click', () => playerShoot(r, c));
+          eGrid.appendChild(el);
+        }
+      }
+
+      const mGrid = document.getElementById('myGrid');
+      mGrid.innerHTML = '';
+      for (let r = 0; r < 10; r++) {
+        for (let c = 0; c < 10; c++) {
+          const cellData = myBoard[r][c];
+          const el = document.createElement('div');
+          el.className = 'my-cell';
+          if (cellData.shipId !== null) el.classList.add('ship');
+          if (cellData.state !== 'empty') el.classList.add(cellData.state);
+          mGrid.appendChild(el);
+        }
+      }
+    }
+
+    function playerShoot(r, c) {
+      if (gameOver || !isPlayerTurn) return;
+      const cell = enemyBoard[r][c];
+      if (cell.state !== 'empty') {
+        haptic('warning');
+        showTaunt('СТОП', `В ${LETTERS[c]}${r + 1} уже били. Память как у рыбки?`, 'miss');
+        return;
+      }
+
+      ensureAudio();
+      const coordStr = `${LETTERS[c]}${r + 1}`;
+
+      if (cell.shipId === null) {
+        cell.state = 'miss';
+        playSplashSfx();
+        spawnSplashFx(r, c);
+        haptic('light');
+        addHistoryEntry('me', coordStr, 'miss', 'Мимо');
+        showTaunt('МИМО', pick(TAUNTS.playerMiss), 'miss');
+        isPlayerTurn = false;
+        renderBoards();
+        updateHud();
+        setTimeout(enemyTurn, 1150);
+      } else {
+        const ship = enemyShips[cell.shipId];
+        ship.hits++;
+        if (ship.hits >= ship.len) {
+          ship.sunk = true;
+          ship.cells.forEach(p => {
+            enemyBoard[p.r][p.c].state = 'sunk';
+            spawnExplosionFx(p.r, p.c, true);
+          });
+          markHaloAroundShip(enemyBoard, ship);
+          playExplosionSfx(true);
+          playBubblesSfx();
+          triggerScreenShake(true);
+          haptic('success');
+          addHistoryEntry('me', coordStr, 'sunk', 'Убил!');
+          showTaunt('УБИЛ!', pick(TAUNTS.playerSink), 'sink');
+        } else {
+          cell.state = 'hit';
+          playExplosionSfx(false);
+          spawnExplosionFx(r, c, false);
+          triggerScreenShake(false);
+          haptic('heavy');
+          addHistoryEntry('me', coordStr, 'hit', 'Ранил');
+          showTaunt('РАНИЛ!', pick(TAUNTS.playerHit), 'hit');
+        }
+        renderBoards();
+        updateHud();
+        checkVictory();
+      }
+    }
+
+    function enemyTurn() {
+      if (gameOver || isPlayerTurn) return;
+
+      let r, c;
+      while (botTargets.length > 0) {
+        const cand = botTargets.shift();
+        if (myBoard[cand.r][cand.c].state === 'empty') {
+          r = cand.r; c = cand.c; break;
+        }
+      }
+      if (r === undefined) {
+        const avail = [];
+        for (let i = 0; i < 10; i++) {
+          for (let j = 0; j < 10; j++) {
+            if (myBoard[i][j].state === 'empty') avail.push({ r: i, c: j });
+          }
+        }
+        if (!avail.length) return;
+        const pickCell = pick(avail);
+        r = pickCell.r; c = pickCell.c;
+      }
+
+      const cell = myBoard[r][c];
+      const coordStr = `${LETTERS[c]}${r + 1}`;
+
+      if (cell.shipId === null) {
+        cell.state = 'miss';
+        playSplashSfx();
+        addHistoryEntry('enemy', coordStr, 'miss', 'Враг мимо');
+        showTaunt('ВРАГ МИМО', pick(TAUNTS.enemyMiss), 'miss');
+        isPlayerTurn = true;
+        renderBoards();
+        updateHud();
+      } else {
+        const ship = myShips[cell.shipId];
+        ship.hits++;
+        if (ship.hits >= ship.len) {
+          ship.sunk = true;
+          ship.cells.forEach(p => myBoard[p.r][p.c].state = 'sunk');
+          markHaloAroundShip(myBoard, ship);
+          botTargets = [];
+          playExplosionSfx(true);
+          playBubblesSfx();
+          triggerScreenShake(true);
+          haptic('error');
+          addHistoryEntry('enemy', coordStr, 'sunk', 'Твой потоплен');
+          showTaunt('ПРОБИТИЕ!', pick(TAUNTS.enemySink), 'sink');
+        } else {
+          cell.state = 'hit';
+          playExplosionSfx(false);
+          triggerScreenShake(false);
+          haptic('medium');
+          addHistoryEntry('enemy', coordStr, 'hit', 'Тебя ранили');
+          showTaunt('ПО ТЕБЕ!', pick(TAUNTS.enemyHit), 'hit');
+          [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].forEach(([nr,nc]) => {
+            if (nr>=0 && nr<10 && nc>=0 && nc<10 && myBoard[nr][nc].state === 'empty') {
+              botTargets.push({ r: nr, c: nc });
+            }
+          });
+        }
+        renderBoards();
+        updateHud();
+        if (!checkVictory()) {
+          setTimeout(enemyTurn, 1200);
+        }
+      }
+    }
+
+    function checkVictory() {
+      const enemyAlive = enemyShips.filter(s => !s.sunk).length;
+      const myAlive = myShips.filter(s => !s.sunk).length;
+      if (enemyAlive === 0 || myAlive === 0) {
+        gameOver = true;
+        const win = enemyAlive === 0;
+        document.getElementById('endTitle').textContent = win ? 'Чистая победа!' : 'Ты пошёл ко дну';
+        document.getElementById('endDesc').textContent = win
+          ? 'Весь вражеский флот кормит рыб. Можно поднимать бокал, адмирал.'
+          : 'Твоих кораблей больше нет. Реванш или пойдёшь сушить тельняшку?';
+        document.getElementById('endModal').classList.add('open');
+        return true;
+      }
+      return false;
+    }
+
+    function startNewGame() {
+      const e = placeFleetRandomly();
+      const m = placeFleetRandomly();
+      enemyBoard = e.board; enemyShips = e.ships;
+      myBoard = m.board; myShips = m.ships;
+      isPlayerTurn = true;
+      gameOver = false;
+      shotCounter = 0;
+      botTargets = [];
+      document.getElementById('shotCount').textContent = '0';
+      document.getElementById('historyList').innerHTML = `
+        <div style="font-size:11px; color:var(--ink-soft); text-align:center; padding-top:24px; font-weight:600;">
+          Пока тихо.<br>Первый залп за тобой.
+        </div>`;
+      document.getElementById('endModal').classList.remove('open');
+      renderBoards();
+      updateHud();
+      showTaunt('БОЦМАН', 'Флот расставлен. Командуй выстрел, капитан!', '');
+      setTimeout(resizeCanvas, 50);
+    }
+
+    // =========================================================================
+    // 6. ГОЛОСОВОЙ ВВОД КООРДИНАТ (МИКРОФОН)
+    // =========================================================================
+    const LETTER_MAP = {
+      'а': 0, 'a': 0, 'антон': 0,
+      'б': 1, 'бэ': 1, 'бе': 1, 'борис': 1, 'b': 1,
+      'в': 2, 'вэ': 2, 'ве': 2, 'v': 2,
+      'г': 3, 'гэ': 3, 'ге': 3, 'g': 3,
+      'д': 4, 'дэ': 4, 'де': 4, 'd': 4,
+      'е': 5, 'ё': 5, 'e': 5,
+      'ж': 6, 'жэ': 6, 'же': 6,
+      'з': 7, 'зэ': 7, 'зе': 7,
+      'и': 8, 'i': 8,
+      'к': 9, 'ка': 9, 'k': 9
+    };
+
+    const NUM_WORDS = {
+      'один': 1, 'единица': 1, 'раз': 1,
+      'два': 2, 'двойка': 2,
+      'три': 3, 'тройка': 3,
+      'четыре': 4, 'четвёрка': 4,
+      'пять': 5, 'пятёрка': 5,
+      'шесть': 6, 'шестёрка': 6,
+      'семь': 7, 'семёрка': 7,
+      'восемь': 8, 'восьмёрка': 8,
+      'девять': 9, 'девятка': 9,
+      'десять': 10, 'десятка': 10
+    };
+
+    function parseSpokenCoord(raw) {
+      const text = raw.toLowerCase().replace(/[-.,!?]/g, ' ').trim();
+      let col = null, row = null;
+
+      // Ищем число цифрой
+      const numMatch = text.match(/\b(10|[1-9])\b/);
+      if (numMatch) row = parseInt(numMatch[1], 10) - 1;
+
+      const tokens = text.split(/\s+/);
+      for (const t of tokens) {
+        if (row === null && NUM_WORDS[t]) row = NUM_WORDS[t] - 1;
+        if (col === null && LETTER_MAP[t] !== undefined) col = LETTER_MAP[t];
+        // Слитный вариант типа "б4" или "к10"
+        const glued = t.match(/^([а-кa-z])(10|[1-9])$/);
+        if (glued && LETTER_MAP[glued[1]] !== undefined) {
+          col = LETTER_MAP[glued[1]];
+          row = parseInt(glued[2], 10) - 1;
+        }
+      }
+      if (col !== null && row !== null && row >= 0 && row < 10) {
+        return { r: row, c: col };
+      }
+      return null;
+    }
+
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let isListening = false;
+
+    const btnMic = document.getElementById('btnMic');
+    const micLabel = document.getElementById('micLabel');
+
+    btnMic.addEventListener('click', () => {
+      ensureAudio();
+      if (!SpeechRec) {
+        showTaunt('МИКРОФОН', 'В этом WebView нужен серверный STT (подключим на следующем этапе). Пока бей тапом!', 'miss');
+        return;
+      }
+      if (isListening) {
+        try { recognition.stop(); } catch (e) {}
+        return;
+      }
+      recognition = new SpeechRec();
+      recognition.lang = 'ru-RU';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 3;
+
+      recognition.onstart = () => {
+        isListening = true;
+        btnMic.classList.add('listening');
+        micLabel.textContent = 'Слушаю… назови клетку (напр. «Г 7»)';
+        haptic('light');
+      };
+
+      recognition.onresult = (e) => {
+        let parsed = null;
+        let heard = '';
+        for (let i = 0; i < e.results[0].length; i++) {
+          const cand = e.results[0][i].transcript;
+          if (!heard) heard = cand;
+          parsed = parseSpokenCoord(cand);
+          if (parsed) break;
+        }
+        if (parsed) {
+          playerShoot(parsed.r, parsed.c);
+        } else {
+          showTaunt('НЕ РАССЛЫШАЛ', `Услышал «${heard}». Говори чётче, морячок: например «Бэ четыре»!`, 'miss');
+        }
+      };
+
+      recognition.onerror = () => {
+        showTaunt('МИКРОФОН', 'Не удалось поймать голос — проверь доступ к микрофону или бей тапом.', 'miss');
+      };
+
+      recognition.onend = () => {
+        isListening = false;
+        btnMic.classList.remove('listening');
+        micLabel.textContent = 'Сказать координату (напр. «Б 4»)';
+      };
+
+      try { recognition.start(); } catch (e) {}
+    });
+
+    // =========================================================================
+    // 7. КНОПКИ УПРАВЛЕНИЯ
+    // =========================================================================
+    document.getElementById('btnSea').addEventListener('click', toggleSeaAmbience);
+    document.getElementById('btnVoice').addEventListener('click', (e) => {
+      voiceEnabled = !voiceEnabled;
+      e.target.classList.toggle('active', voiceEnabled);
+      e.target.textContent = voiceEnabled ? '🔊' : '🔇';
+    });
+    document.getElementById('btnRestart').addEventListener('click', startNewGame);
+    document.getElementById('btnPlayAgain').addEventListener('click', startNewGame);
+
+    document.getElementById('btnOnline').addEventListener('click', () => {
+      document.getElementById('onlineModal').classList.add('open');
+    });
+    document.getElementById('btnCloseOnline').addEventListener('click', () => {
+      document.getElementById('onlineModal').classList.remove('open');
+    });
+    document.getElementById('btnCreateRoom').addEventListener('click', () => {
+      const code = document.getElementById('roomCodeInput').value.trim() || ('M-' + Math.floor(100 + Math.random() * 899));
+      document.getElementById('roomCodeInput').value = code;
+      showTaunt('ОНЛАЙН', `Каюта ${code} готова к привязке WebSocket-сервера!`, 'miss');
+      document.getElementById('onlineModal').classList.remove('open');
+    });
+
+    // Запуск
+    startNewGame();
+    animateFx();
+  </script>
+</body>
+</html>
