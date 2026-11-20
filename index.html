@@ -7,18 +7,20 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=JetBrains+Mono:wght@600;800&family=Montserrat:wght@600;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;800&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --paper-bg: #F6F2E6;
-      --grid-line: rgba(45, 110, 185, 0.22);
-      --margin-red: rgba(217, 56, 41, 0.35);
-      --ink-blue: #182C52;
-      --ink-soft: #4A5F85;
-      --ink-red: #D93829;
-      --ink-accent: #E86A17;
-      --sea-water: #2B7DE9;
-      --sunk-dark: #1E293B;
+      --ocean-deep: #061320;
+      --ocean-mid: #0B253C;
+      --glass-bg: rgba(7, 22, 38, 0.56);
+      --glass-border: rgba(125, 211, 252, 0.22);
+      --accent-cyan: #38BDF8;
+      --accent-gold: #F59E0B;
+      --accent-red: #EF4444;
+      --accent-green: #22C55E;
+      --text-main: #F0F9FF;
+      --text-muted: #94A3B8;
+      --ease-motion: cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     * {
@@ -31,65 +33,57 @@
       margin: 0;
       padding: 0;
       min-height: 100dvh;
-      background-color: var(--paper-bg);
-      background-image:
-        linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-        linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
-      background-size: 22px 22px;
-      color: var(--ink-blue);
+      background: var(--ocean-deep);
+      color: var(--text-main);
       font-family: 'Montserrat', -apple-system, sans-serif;
       overflow-x: hidden;
     }
 
-    /* Красная вертикальная линия тетрадного поля */
-    body::before {
-      content: "";
+    /* Живое анимированное море на весь экран */
+    #oceanCanvas {
       position: fixed;
-      top: 0;
-      bottom: 0;
-      left: 14px;
-      width: 2px;
-      background: var(--margin-red);
-      pointer-events: none;
+      inset: 0;
+      width: 100%;
+      height: 100%;
       z-index: 0;
+      pointer-events: none;
     }
 
     .app {
       position: relative;
       z-index: 1;
-      max-width: 500px;
+      max-width: 480px;
       margin: 0 auto;
-      padding: 10px 10px calc(24px + env(safe-area-inset-bottom));
+      padding: 10px 10px calc(28px + env(safe-area-inset-bottom));
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
 
     /* Встряска экрана */
-    @keyframes screenShakeLight {
+    @keyframes shakeLight {
       0%, 100% { transform: translate(0, 0); }
       25% { transform: translate(-4px, 3px); }
-      50% { transform: translate(4px, -3px); }
-      75% { transform: translate(-3px, -2px); }
+      50% { transform: translate(4px, -2px); }
+      75% { transform: translate(-2px, -2px); }
     }
-    @keyframes screenShakeHeavy {
+    @keyframes shakeHeavy {
       0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      15% { transform: translate(-7px, 5px) rotate(-0.8deg); }
-      30% { transform: translate(7px, -6px) rotate(0.8deg); }
-      45% { transform: translate(-6px, -4px) rotate(-0.5deg); }
-      60% { transform: translate(6px, 4px) rotate(0.5deg); }
-      80% { transform: translate(-3px, 2px) rotate(0deg); }
+      15% { transform: translate(-7px, 5px) rotate(-0.7deg); }
+      30% { transform: translate(7px, -5px) rotate(0.7deg); }
+      45% { transform: translate(-5px, -4px) rotate(-0.4deg); }
+      65% { transform: translate(5px, 4px) rotate(0.4deg); }
     }
-    .shake-light { animation: screenShakeLight 0.28s cubic-bezier(.36,.07,.19,.97); }
-    .shake-heavy { animation: screenShakeHeavy 0.48s cubic-bezier(.36,.07,.19,.97); }
+    .shake-light { animation: shakeLight 0.26s var(--ease-motion); }
+    .shake-heavy { animation: shakeHeavy 0.45s var(--ease-motion); }
 
-    /* Шапка */
+    /* Верхняя панель */
     .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      padding: 4px 4px 0;
+      padding: 2px 2px 0;
     }
     .brand {
       display: flex;
@@ -97,18 +91,21 @@
       line-height: 1.05;
     }
     .brand-title {
-      font-family: 'Caveat', cursive;
-      font-size: 27px;
-      font-weight: 700;
-      color: var(--ink-blue);
-      letter-spacing: 0.01em;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #F8FAFC 0%, #7DD3FC 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
     .brand-sub {
       font-size: 10px;
-      font-weight: 800;
+      font-weight: 700;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--ink-red);
+      color: var(--accent-cyan);
+      opacity: 0.85;
     }
 
     .top-actions {
@@ -116,637 +113,501 @@
       align-items: center;
       gap: 6px;
     }
-    .icon-btn {
-      background: rgba(255, 255, 255, 0.78);
-      border: 2px solid var(--ink-blue);
+    .glass-btn {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
       border-radius: 10px;
-      padding: 6px 9px;
-      font-size: 13px;
+      padding: 7px 10px;
+      font-size: 12px;
       font-weight: 800;
-      color: var(--ink-blue);
+      color: var(--text-main);
       cursor: pointer;
-      box-shadow: 2px 2px 0 var(--ink-blue);
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      transition: transform 0.15s var(--ease-motion), background 0.2s, border-color 0.2s;
     }
-    .icon-btn:active {
-      transform: translate(2px, 2px);
-      box-shadow: 0 0 0 var(--ink-blue);
+    .glass-btn:active { transform: scale(0.95); }
+    .glass-btn.active {
+      background: rgba(56, 189, 248, 0.22);
+      border-color: rgba(56, 189, 248, 0.7);
+      color: #E0F2FE;
     }
-    .icon-btn.active {
-      background: var(--ink-blue);
-      color: #fff;
-    }
-    .icon-btn.online-btn {
-      background: #FFF0EB;
-      border-color: var(--ink-red);
-      color: var(--ink-red);
-      box-shadow: 2px 2px 0 var(--ink-red);
+    .glass-btn.online-pill {
+      border-color: rgba(245, 158, 11, 0.55);
+      color: #FCD34D;
       font-size: 11px;
     }
 
-    /* Статус хода + счётчик кораблей */
-    .hud-strip {
+    /* HUD статус + счёт */
+    .hud-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(255, 253, 247, 0.9);
-      border: 2px solid var(--ink-blue);
-      border-radius: 12px;
-      padding: 7px 11px;
-      box-shadow: 3px 3px 0 rgba(24, 44, 82, 0.15);
+      background: var(--glass-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      padding: 8px 12px;
     }
-    .turn-badge {
+    .turn-indicator {
       display: flex;
       align-items: center;
-      gap: 7px;
-      font-size: 12px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .turn-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #16A34A;
-      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
-    }
-    .turn-dot.enemy {
-      background: var(--ink-red);
-      box-shadow: 0 0 0 3px rgba(217, 56, 41, 0.25);
-    }
-    .score-pills {
-      display: flex;
       gap: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .pulse-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 10px var(--accent-green);
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .pulse-dot.enemy {
+      background: var(--accent-red);
+      box-shadow: 0 0 10px var(--accent-red);
+    }
+    .pulse-dot.setup {
+      background: var(--accent-gold);
+      box-shadow: 0 0 10px var(--accent-gold);
+    }
+    .fleet-counters {
+      display: flex;
+      gap: 6px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
       font-weight: 800;
     }
-    .score-pill {
-      padding: 3px 7px;
-      border-radius: 6px;
-      background: #E8EEF7;
-      color: var(--ink-blue);
+    .counter-chip {
+      padding: 3px 8px;
+      border-radius: 8px;
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      color: #BAE6FD;
     }
-    .score-pill.enemy-left {
-      background: #FDE8E6;
-      color: var(--ink-red);
+    .counter-chip.enemy {
+      background: rgba(239, 68, 68, 0.16);
+      border-color: rgba(239, 68, 68, 0.35);
+      color: #FCA5A5;
     }
 
     /* Плашка кинетической насмешки */
-    .taunt-stage {
+    .taunt-wrap {
       min-height: 48px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      position: relative;
     }
-    .taunt-bubble {
+    .taunt-card {
       width: 100%;
-      background: #182C52;
-      color: #FFFDF7;
+      background: rgba(9, 25, 42, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(125, 211, 252, 0.28);
+      border-left: 4px solid var(--accent-cyan);
       border-radius: 12px;
-      padding: 9px 14px;
+      padding: 10px 13px;
       font-size: 13px;
       font-weight: 700;
-      line-height: 1.3;
-      text-align: center;
-      box-shadow: 4px 4px 0 var(--ink-red);
-      transform: scale(1) rotate(-0.4deg);
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s;
+      line-height: 1.32;
+      color: #F8FAFC;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+      transition: border-color 0.2s, background 0.2s;
     }
-    .taunt-bubble.pop {
-      animation: tauntPop 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
+    .taunt-card.pop {
+      animation: tauntEnter 0.32s var(--ease-motion);
     }
-    .taunt-bubble.type-hit {
-      background: #B91C1C;
-      box-shadow: 4px 4px 0 #F59E0B;
+    .taunt-card.hit {
+      border-left-color: var(--accent-gold);
+      background: rgba(69, 26, 3, 0.78);
     }
-    .taunt-bubble.type-sink {
-      background: #111827;
-      box-shadow: 4px 4px 0 #EF4444;
+    .taunt-card.sink {
+      border-left-color: var(--accent-red);
+      background: rgba(69, 10, 10, 0.82);
     }
-    .taunt-bubble.type-miss {
-      background: #1E3A5F;
-      box-shadow: 4px 4px 0 #60A5FA;
+    @keyframes tauntEnter {
+      0% { opacity: 0.4; transform: translateY(-6px) scale(0.97); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
     }
-    @keyframes tauntPop {
-      0% { transform: scale(0.84) rotate(2deg); }
-      60% { transform: scale(1.04) rotate(-1deg); }
-      100% { transform: scale(1) rotate(-0.4deg); }
-    }
-    .taunt-tag {
+    .taunt-badge {
       display: inline-block;
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 900;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       padding: 2px 6px;
-      border-radius: 4px;
-      background: rgba(255,255,255,0.18);
-      margin-right: 6px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.14);
+      margin-right: 7px;
       vertical-align: middle;
-      letter-spacing: 0.06em;
     }
 
-    /* ВЕРХНЕЕ БОЕВОЕ ПОЛЕ (МАКСИМАЛЬНЫЙ РАЗМЕР НА ВЕСЬ ЭКРАН) */
-    .board-wrapper {
-      position: relative;
-      background: rgba(255, 253, 248, 0.92);
-      border: 2.5px solid var(--ink-blue);
-      border-radius: 14px;
-      padding: 6px;
-      box-shadow: 4px 5px 0 var(--ink-blue);
-    }
-    .board-header-row {
+    /* Панель фазы расстановки */
+    .setup-panel {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 5px;
-      padding: 0 2px;
+      flex-direction: column;
+      gap: 8px;
     }
-    .board-label {
+    .setup-hint {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #BAE6FD;
+      background: rgba(14, 116, 144, 0.25);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 10px;
+      padding: 7px 10px;
+    }
+    .setup-actions {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0EA5E9 0%, #2563EB 100%);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 13px 16px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.42);
+      transition: transform 0.14s var(--ease-motion);
+    }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-secondary {
+      background: rgba(15, 39, 64, 0.82);
+      color: #E0F2FE;
+      border: 1px solid rgba(125, 211, 252, 0.35);
+      border-radius: 12px;
+      padding: 13px 12px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.14s var(--ease-motion);
+    }
+    .btn-secondary:active { transform: scale(0.97); }
+
+    /* Карточка поля (и верхнего, и нижнего) */
+    .board-card {
+      position: relative;
+      background: rgba(6, 22, 38, 0.46);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1.5px solid rgba(125, 211, 252, 0.28);
+      border-radius: 16px;
+      padding: 7px;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .board-card.hidden { display: none; }
+
+    .board-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px 6px;
+    }
+    .board-title {
       font-size: 11px;
       font-weight: 900;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--ink-blue);
+      color: #E0F2FE;
     }
-    .board-hint {
+    .board-sub {
       font-size: 10px;
       font-weight: 700;
-      color: var(--ink-soft);
+      color: #7DD3FC;
+      opacity: 0.85;
     }
 
-    .grid-frame {
+    /* Квадратная сцена 10x10 */
+    .grid-stage {
       position: relative;
       width: 100%;
       aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1.5px solid rgba(125, 211, 252, 0.4);
+      background: rgba(8, 32, 54, 0.28);
+    }
+    .grid-stage.setup-touch {
+      touch-action: none;
     }
 
-    .battle-grid {
+    .grid-cells {
       display: grid;
       grid-template-columns: repeat(10, 1fr);
       grid-template-rows: repeat(10, 1fr);
       width: 100%;
       height: 100%;
-      border: 2px solid var(--ink-blue);
-      background: #FAF8F2;
+      position: relative;
+      z-index: 1;
     }
 
     .cell {
       position: relative;
-      border: 0.5px solid rgba(45, 110, 185, 0.34);
+      border: 0.5px solid rgba(125, 211, 252, 0.16);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      overflow: hidden;
-      transition: background 0.12s ease;
+      transition: background 0.14s ease;
     }
     .cell:active:not(.shot) {
-      background: rgba(43, 125, 233, 0.18);
+      background: rgba(56, 189, 248, 0.22);
     }
-
-    /* Фоновые координаты прямо в клетке */
     .cell-coord {
       font-family: 'JetBrains Mono', monospace;
-      font-size: clamp(8px, 2.3vw, 11px);
-      font-weight: 800;
-      color: rgba(24, 44, 82, 0.22);
+      font-size: clamp(8px, 2.2vw, 10.5px);
+      font-weight: 700;
+      color: rgba(186, 230, 253, 0.26);
       pointer-events: none;
       z-index: 1;
-      transition: opacity 0.2s;
     }
-    .cell.shot .cell-coord {
-      opacity: 0.08;
-    }
+    .cell.shot .cell-coord { opacity: 0.08; }
 
-    /* Состояния клеток: МИМО */
-    .cell.miss {
-      background: rgba(43, 125, 233, 0.08);
-      cursor: default;
-    }
+    /* Подсветка валидности при перетаскивании */
+    .cell.drag-ok { background: rgba(34, 197, 94, 0.36) !important; border-color: rgba(74, 222, 128, 0.7); }
+    .cell.drag-bad { background: rgba(239, 68, 68, 0.42) !important; border-color: rgba(248, 113, 113, 0.8); }
+
+    /* Маркеры попаданий и промахов поверх клеток и кораблей */
     .cell.miss::after {
       content: "";
       position: absolute;
-      width: 34%;
-      height: 34%;
+      width: 32%;
+      height: 32%;
       border-radius: 50%;
-      background: var(--sea-water);
-      opacity: 0.72;
-      animation: missDot 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-      z-index: 2;
+      background: radial-gradient(circle, #E0F2FE 0%, rgba(56, 189, 248, 0.55) 65%, transparent 100%);
+      box-shadow: 0 0 8px rgba(125, 211, 252, 0.5);
+      animation: splashDot 0.32s var(--ease-motion);
+      z-index: 6;
     }
-    @keyframes missDot {
-      0% { transform: scale(0); opacity: 0; }
-      70% { transform: scale(1.45); opacity: 0.9; }
-      100% { transform: scale(1); opacity: 0.72; }
+    @keyframes splashDot {
+      0% { transform: scale(2.2); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
     }
 
-    /* Состояния клеток: РАНИЛ (ГОРЯЩИЙ КОРАБЛЬ) */
     .cell.hit {
-      background: linear-gradient(180deg, rgba(254, 215, 170, 0.65), rgba(239, 68, 68, 0.45));
-      cursor: default;
+      background: radial-gradient(circle, rgba(249, 115, 22, 0.32) 0%, rgba(220, 38, 38, 0.14) 75%);
     }
-    .cell.hit::before {
-      content: "✕";
-      position: absolute;
-      font-size: clamp(16px, 4.8vw, 24px);
-      font-weight: 900;
-      color: var(--ink-red);
-      z-index: 2;
-      text-shadow: 0 0 6px rgba(255, 160, 0, 0.8);
-    }
-    .flame-core {
-      position: absolute;
-      bottom: 2px;
-      width: 66%;
-      height: 68%;
-      background: radial-gradient(circle at 50% 80%, #FEF08A 0%, #F97316 48%, rgba(220,38,38,0) 78%);
-      border-radius: 50% 50% 30% 30%;
-      filter: blur(0.4px);
-      animation: flameFlicker 0.42s infinite alternate ease-in-out;
-      pointer-events: none;
-      z-index: 3;
-    }
-    @keyframes flameFlicker {
-      0% { transform: scale(0.92, 0.95) translateY(1px); opacity: 0.85; }
-      100% { transform: scale(1.08, 1.15) translateY(-2px); opacity: 1; }
-    }
-
-    /* Состояния клеток: УБИЛ (ТОНУЩИЙ С ПУЗЫРЯМИ) */
     .cell.sunk {
-      background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
-      border-color: #334155;
-      cursor: default;
-      animation: sinkHull 0.65s ease-out;
-    }
-    .cell.sunk::before {
-      content: "☠";
-      position: absolute;
-      font-size: clamp(13px, 3.8vw, 18px);
-      color: rgba(255, 255, 255, 0.45);
-      z-index: 2;
-    }
-    @keyframes sinkHull {
-      0% { transform: scale(1.15) rotate(-5deg); background: #EF4444; }
-      50% { transform: scale(0.92) rotate(3deg); }
-      100% { transform: scale(1) rotate(0deg); }
-    }
-    .bubble {
-      position: absolute;
-      bottom: -4px;
-      border-radius: 50%;
-      border: 1.5px solid rgba(147, 197, 253, 0.85);
-      background: rgba(191, 219, 254, 0.3);
-      animation: riseBubble 1.8s infinite ease-in;
-      pointer-events: none;
-      z-index: 4;
-    }
-    @keyframes riseBubble {
-      0% { transform: translateY(0) scale(0.5); opacity: 0; }
-      20% { opacity: 0.95; }
-      100% { transform: translateY(-28px) scale(1.15); opacity: 0; }
+      background: rgba(2, 6, 23, 0.36);
     }
 
-    /* Canvas слой для взрывов, всплесков, дыма и пузырей */
-    #fxCanvas {
+    /* Слой прорисованных кораблей (SVG) */
+    .ships-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .ship-sprite {
+      position: absolute;
+      padding: 2px;
+      transition: left 0.22s var(--ease-motion), top 0.22s var(--ease-motion), opacity 0.25s ease, transform 0.25s var(--ease-motion);
+      filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.55));
+    }
+    .ship-sprite.draggable {
+      pointer-events: auto;
+      cursor: grab;
+    }
+    .ship-sprite.dragging-origin {
+      opacity: 0.25;
+      transition: none;
+    }
+    .ship-sprite.drag-ghost {
+      z-index: 40;
+      pointer-events: none;
+      transition: none;
+      transform: scale(1.06);
+      filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.7));
+    }
+    .ship-sprite.sunk-ship {
+      opacity: 0.72;
+      filter: brightness(0.55) saturate(0.5) drop-shadow(0 2px 6px rgba(0,0,0,0.8));
+      animation: shipSubmerge 0.75s var(--ease-motion);
+    }
+    @keyframes shipSubmerge {
+      0% { transform: scale(1.08) rotate(-2deg); filter: brightness(1.6) drop-shadow(0 0 14px #EF4444); }
+      100% { transform: scale(0.95) rotate(0deg); filter: brightness(0.55) saturate(0.5); }
+    }
+
+    /* Живой огонь и пузыри поверх слоя кораблей */
+    .fx-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 8;
+      pointer-events: none;
+    }
+
+    /* Canvas VFX для каждого поля (снаряды, взрывы, огонь, дым, пузыри) */
+    .board-fx-canvas {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
+      z-index: 9;
       pointer-events: none;
-      z-index: 10;
     }
 
-    /* Панель микрофона и голосового выстрела */
-    .voice-dock {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .mic-btn {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 13px 16px;
-      background: var(--ink-blue);
-      color: #FFFDF7;
-      border: 2.5px solid var(--ink-blue);
-      border-radius: 14px;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 14px;
-      font-weight: 900;
-      letter-spacing: 0.02em;
-      cursor: pointer;
-      box-shadow: 0 4px 0 #0C1830;
-      transition: transform 0.1s, background 0.15s;
-    }
-    .mic-btn:active {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0 #0C1830;
-    }
-    .mic-btn.listening {
-      background: var(--ink-red);
-      border-color: #7F1D1D;
-      box-shadow: 0 0 0 5px rgba(217, 56, 41, 0.25);
-      animation: micPulse 1s infinite;
-    }
-    @keyframes micPulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.015); }
-    }
-    .new-game-btn {
-      padding: 13px 14px;
-      background: rgba(255,255,255,0.88);
-      border: 2.5px solid var(--ink-blue);
-      border-radius: 14px;
-      font-size: 16px;
-      cursor: pointer;
-      box-shadow: 0 4px 0 rgba(24,44,82,0.22);
-    }
-
-    /* НИЖНЯЯ СЕКЦИЯ: МОЙ ФЛОТ + ИСТОРИЯ ВЫСТРЕЛОВ */
-    .lower-deck {
-      display: grid;
-      grid-template-columns: 1fr 1.15fr;
-      gap: 10px;
-      align-items: stretch;
-    }
-
-    .mini-card {
-      background: rgba(255, 253, 248, 0.92);
-      border: 2px solid var(--ink-blue);
-      border-radius: 12px;
-      padding: 8px;
-      box-shadow: 3px 3px 0 rgba(24, 44, 82, 0.16);
-      display: flex;
-      flex-direction: column;
-    }
-    .mini-title {
-      font-size: 10px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--ink-blue);
-      margin-bottom: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .my-grid {
-      display: grid;
-      grid-template-columns: repeat(10, 1fr);
-      grid-template-rows: repeat(10, 1fr);
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      border: 1.5px solid var(--ink-blue);
-      background: #FAF8F2;
-    }
-    .my-cell {
-      border: 0.5px solid rgba(45, 110, 185, 0.25);
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .my-cell.ship {
-      background: rgba(24, 44, 82, 0.78);
-      border-color: rgba(255,255,255,0.25);
-    }
-    .my-cell.miss::after {
-      content: "";
-      width: 36%;
-      height: 36%;
-      border-radius: 50%;
-      background: var(--sea-water);
-      opacity: 0.7;
-    }
-    .my-cell.hit {
-      background: #EA580C;
-    }
-    .my-cell.hit::after {
-      content: "✕";
-      color: #FEF08A;
-      font-size: 9px;
-      font-weight: 900;
-    }
-    .my-cell.sunk {
-      background: #0F172A;
-    }
-    .my-cell.sunk::after {
-      content: "✕";
-      color: #EF4444;
-      font-size: 9px;
-      font-weight: 900;
-    }
-
-    /* История выстрелов */
-    .history-list {
-      flex: 1;
-      max-height: 168px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      padding-right: 2px;
-    }
-    .history-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
-      padding: 5px 7px;
-      border-radius: 8px;
-      background: #F1ECE0;
-      font-size: 11px;
-      font-weight: 700;
-      border-left: 3px solid var(--sea-water);
-    }
-    .history-item.hit { border-left-color: #EA580C; background: #FFF2E8; }
-    .history-item.sunk { border-left-color: #111827; background: #E5E7EB; }
-    .history-item.enemy-shot { opacity: 0.85; border-left-style: dashed; }
-    .hist-coord {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 800;
-      font-size: 11px;
-    }
-    .hist-res {
-      font-size: 10px;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    /* Модалка Онлайн / Конец игры */
+    /* Модалки */
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.68);
-      backdrop-filter: blur(4px);
+      background: rgba(2, 8, 18, 0.76);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 18px;
       z-index: 100;
     }
     .modal-backdrop.open { display: flex; }
-    .modal-box {
-      background: var(--paper-bg);
-      border: 3px solid var(--ink-blue);
-      border-radius: 18px;
-      padding: 20px;
+    .modal-card {
       width: 100%;
-      max-width: 380px;
-      box-shadow: 6px 6px 0 var(--ink-blue);
+      max-width: 360px;
+      background: linear-gradient(180deg, #0D2238 0%, #071422 100%);
+      border: 1px solid rgba(125, 211, 252, 0.35);
+      border-radius: 20px;
+      padding: 22px 18px;
       text-align: center;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
     }
     .modal-title {
-      font-family: 'Caveat', cursive;
-      font-size: 32px;
       margin: 0 0 8px;
-      color: var(--ink-blue);
+      font-size: 22px;
+      font-weight: 900;
+      color: #F8FAFC;
     }
     .modal-text {
+      margin: 0 0 16px;
       font-size: 13px;
       line-height: 1.5;
-      color: var(--ink-soft);
-      margin: 0 0 16px;
-      font-weight: 600;
+      color: #CBD5E1;
     }
     .room-input {
       width: 100%;
-      padding: 11px 14px;
-      border: 2px solid var(--ink-blue);
-      border-radius: 10px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(125, 211, 252, 0.4);
+      background: rgba(2, 12, 24, 0.8);
+      color: #fff;
       font-family: 'JetBrains Mono', monospace;
       font-size: 16px;
       font-weight: 800;
       text-align: center;
       text-transform: uppercase;
       margin-bottom: 10px;
-      background: #fff;
-    }
-    .modal-btn {
-      width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: 2px solid var(--ink-blue);
-      background: var(--ink-blue);
-      color: #fff;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 13px;
-      font-weight: 800;
-      cursor: pointer;
-      margin-bottom: 8px;
-    }
-    .modal-btn.secondary {
-      background: #fff;
-      color: var(--ink-blue);
+      outline: none;
     }
   </style>
 </head>
 <body>
+  <!-- Живой океан -->
+  <canvas id="oceanCanvas"></canvas>
+
   <div class="app" id="appRoot">
     <!-- Шапка -->
     <header class="topbar">
       <div class="brand">
         <span class="brand-title">Битва Моряков</span>
-        <span class="brand-sub">Морской Бой · WebView</span>
+        <span class="brand-sub">Морской Бой · v0.2</span>
       </div>
       <div class="top-actions">
-        <button class="icon-btn" id="btnSea" title="Шум моря">🌊</button>
-        <button class="icon-btn active" id="btnVoice" title="Озвучка насмешек">🔊</button>
-        <button class="icon-btn online-btn" id="btnOnline">⚡ ОНЛАЙН</button>
+        <button class="glass-btn" id="btnSea" title="Шум моря">🌊</button>
+        <button class="glass-btn active" id="btnSfx" title="Звуки боя">🔊</button>
+        <button class="glass-btn online-pill" id="btnOnline">⚡ 2 ИГРОКА</button>
+        <button class="glass-btn" id="btnReset" title="Новая расстановка">🔄</button>
       </div>
     </header>
 
-    <!-- Статус и счёт -->
-    <div class="hud-strip">
-      <div class="turn-badge">
-        <span class="turn-dot" id="turnDot"></span>
-        <span id="turnText">Твой залп, капитан</span>
+    <!-- HUD статуса -->
+    <div class="hud-bar">
+      <div class="turn-indicator">
+        <span class="pulse-dot setup" id="turnDot"></span>
+        <span id="turnText">Расстановка флота</span>
       </div>
-      <div class="score-pills">
-        <span class="score-pill" id="myShipsLeft">Ты: 10</span>
-        <span class="score-pill enemy-left" id="enemyShipsLeft">Враг: 10</span>
-      </div>
-    </div>
-
-    <!-- Кинетическая фраза-насмешка -->
-    <div class="taunt-stage">
-      <div class="taunt-bubble" id="tauntBubble">
-        <span class="taunt-tag">БОЦМАН</span>
-        <span id="tauntText">Жми на клетку или диктуй в микрофон. Посмотрим, чего ты стоишь.</span>
+      <div class="fleet-counters">
+        <span class="counter-chip" id="myCount">Ты: 10</span>
+        <span class="counter-chip enemy" id="enemyCount">Враг: 10</span>
       </div>
     </div>
 
-    <!-- ВЕРХНЕЕ ПОЛЕ: БОЕВОЕ (КУДА СТРЕЛЯЕМ) -->
-    <section class="board-wrapper">
-      <div class="board-header-row">
-        <span class="board-label">🎯 Боевое поле (Сектор врага)</span>
-        <span class="board-hint">Назови координату или тапни</span>
+    <!-- Плашка циничных фраз -->
+    <div class="taunt-wrap">
+      <div class="taunt-card" id="tauntCard">
+        <span class="taunt-badge">БОЦМАН</span>
+        <span id="tauntText">Расставляй корыта. Тап — поворот, зажми и тяни — перенос.</span>
       </div>
-      <div class="grid-frame">
-        <div class="battle-grid" id="enemyGrid"></div>
-        <canvas id="fxCanvas"></canvas>
+    </div>
+
+    <!-- Панель управления расстановкой (видна до старта боя) -->
+    <div class="setup-panel" id="setupPanel">
+      <div class="setup-hint">
+        👆 <b>Тап по кораблю</b> — повернуть · ✋ <b>Тяни пальцем</b> — переставить
+      </div>
+      <div class="setup-actions">
+        <button class="btn-secondary" id="btnAutoPlace">🎲 Авто</button>
+        <button class="btn-primary" id="btnStartBattle">⚔️ В БОЙ!</button>
+      </div>
+    </div>
+
+    <!-- ПОЛЕ 1 (ВЕРХНЕЕ): БОЕВОЕ ПОЛЕ ВРАГА (включается после старта боя) -->
+    <section class="board-card hidden" id="enemyBoardCard">
+      <div class="board-head">
+        <span class="board-title">🎯 Сектор врага</span>
+        <span class="board-sub">Тапни по клетке для залпа</span>
+      </div>
+      <div class="grid-stage" id="enemyStage">
+        <div class="grid-cells" id="enemyGrid"></div>
+        <div class="ships-layer" id="enemyShipsLayer"></div>
+        <canvas class="board-fx-canvas" id="enemyFxCanvas"></canvas>
       </div>
     </section>
 
-    <!-- Микрофон и рестарт -->
-    <div class="voice-dock">
-      <button class="mic-btn" id="btnMic">
-        <span>🎙️</span>
-        <span id="micLabel">Сказать координату (напр. «Б 4»)</span>
-      </button>
-      <button class="new-game-btn" id="btnRestart" title="Новая партия">🔄</button>
-    </div>
-
-    <!-- НИЖНЯЯ ПАЛУБА: МОЙ ФЛОТ + ИСТОРИЯ ВЫСТРЕЛОВ -->
-    <section class="lower-deck">
-      <div class="mini-card">
-        <div class="mini-title">
-          <span>⚓ Твой флот</span>
-          <span style="color:var(--ink-soft)">10 кораблей</span>
-        </div>
-        <div class="my-grid" id="myGrid"></div>
+    <!-- ПОЛЕ 2 (НИЖНЕЕ): ТВОЙ ФЛОТ (полный размер, на нём же идёт расстановка) -->
+    <section class="board-card" id="myBoardCard">
+      <div class="board-head">
+        <span class="board-title" id="myBoardTitle">⚓ Твоя эскадра (Расстановка)</span>
+        <span class="board-sub" id="myBoardSub">10 боевых единиц</span>
       </div>
-
-      <div class="mini-card">
-        <div class="mini-title">
-          <span>📜 История выстрелов</span>
-          <span id="shotCount" style="color:var(--ink-red)">0</span>
-        </div>
-        <div class="history-list" id="historyList">
-          <div style="font-size:11px; color:var(--ink-soft); text-align:center; padding-top:24px; font-weight:600;">
-            Пока тихо.<br>Первый залп за тобой.
-          </div>
-        </div>
+      <div class="grid-stage setup-touch" id="myStage">
+        <div class="grid-cells" id="myGrid"></div>
+        <div class="ships-layer" id="myShipsLayer"></div>
+        <canvas class="board-fx-canvas" id="myFxCanvas"></canvas>
       </div>
     </section>
   </div>
 
-  <!-- Модалка Онлайн-сессии (WebSocket) -->
+  <!-- Модалка Онлайн (WebSocket) -->
   <div class="modal-backdrop" id="onlineModal">
-    <div class="modal-box">
-      <h3 class="modal-title">Дуэль на 2 смартфона</h3>
+    <div class="modal-card">
+      <h3 class="modal-title">Онлайн на 2 смартфона</h3>
       <p class="modal-text">
-        В прототипе v0.1 игра идёт против умного бота. Для живой дуэли через WebSocket в Telegram подключим сервер комнат — ниже готовый интерфейс входа по коду.
+        Сейчас тест механики и графики против умного бота. Как только утвердим визуал и расстановку — подключим WebSocket-комнаты для игры вдвоём по коду.
       </p>
-      <input class="room-input" id="roomCodeInput" placeholder="КОД КАЮТЫ (НАПР. M-402)" maxlength="8" />
-      <button class="modal-btn" id="btnCreateRoom">Создать каюту (WebSocket)</button>
-      <button class="modal-btn secondary" id="btnCloseOnline">Вернуться к бою с ботом</button>
+      <input class="room-input" id="roomCodeInput" placeholder="КОД КАЮТЫ (НАПР. M-774)" maxlength="8" />
+      <button class="btn-primary" style="width:100%; margin-bottom:8px;" id="btnCreateRoom">Создать каюту</button>
+      <button class="btn-secondary" style="width:100%;" id="btnCloseOnline">Вернуться в игру</button>
     </div>
   </div>
 
   <!-- Модалка Финала -->
   <div class="modal-backdrop" id="endModal">
-    <div class="modal-box">
+    <div class="modal-card">
       <h3 class="modal-title" id="endTitle">Победа!</h3>
       <p class="modal-text" id="endDesc"></p>
-      <button class="modal-btn" id="btnPlayAgain">Сыграть ещё раз</button>
+      <button class="btn-primary" style="width:100%;" id="btnPlayAgain">Новая партия</button>
     </div>
   </div>
 
@@ -768,6 +629,8 @@
         if (!tg?.HapticFeedback) return;
         if (['success', 'warning', 'error'].includes(type)) {
           tg.HapticFeedback.notificationOccurred(type);
+        } else if (type === 'selection') {
+          tg.HapticFeedback.selectionChanged();
         } else {
           tg.HapticFeedback.impactOccurred(type);
         }
@@ -775,27 +638,536 @@
     }
 
     // =========================================================================
-    // 2. ЦИНИЧНЫЕ НАСМЕШКИ (ВЗРОСЛЫЙ ТОН, БЕЗ МАТА)
+    // 2. ЖИВОЙ ОКЕАН НА ФОНЕ (АНИМИРОВАННЫЕ ВОЛНЫ И КАУСТИКИ)
+    // =========================================================================
+    const oceanCanvas = document.getElementById('oceanCanvas');
+    const octx = oceanCanvas.getContext('2d');
+    let oceanW = 0, oceanH = 0;
+
+    function resizeOcean() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      oceanW = window.innerWidth;
+      oceanH = window.innerHeight;
+      oceanCanvas.width = oceanW * dpr;
+      oceanCanvas.height = oceanH * dpr;
+      octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeOcean);
+    resizeOcean();
+
+    function renderOcean(time) {
+      const t = time * 0.00075;
+      const grad = octx.createLinearGradient(0, 0, oceanW * 0.4, oceanH);
+      grad.addColorStop(0, '#051524');
+      grad.addColorStop(0.45, '#0A2942');
+      grad.addColorStop(1, '#04121F');
+      octx.fillStyle = grad;
+      octx.fillRect(0, 0, oceanW, oceanH);
+
+      // Мягкие дрейфующие глубинные переливы (каустики)
+      for (let i = 0; i < 4; i++) {
+        const cx = oceanW * (0.2 + 0.22 * i) + Math.sin(t * (0.8 + i * 0.25) + i * 2) * 55;
+        const cy = oceanH * (0.18 + 0.24 * i) + Math.cos(t * (0.65 + i * 0.2) + i) * 45;
+        const rad = Math.max(oceanW, oceanH) * (0.34 + 0.05 * Math.sin(t + i));
+        const rg = octx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+        rg.addColorStop(0, i % 2 === 0 ? 'rgba(56, 189, 248, 0.13)' : 'rgba(20, 184, 166, 0.10)');
+        rg.addColorStop(1, 'rgba(6, 19, 32, 0)');
+        octx.fillStyle = rg;
+        octx.fillRect(0, 0, oceanW, oceanH);
+      }
+
+      // Живые бегущие гребни волн
+      octx.lineWidth = 1.25;
+      const bands = 14;
+      for (let b = 0; b < bands; b++) {
+        const baseY = (oceanH / bands) * b + ((t * 18) % (oceanH / bands));
+        octx.beginPath();
+        for (let x = 0; x <= oceanW; x += 18) {
+          const y = baseY
+            + Math.sin(x * 0.015 + t * 2.1 + b * 0.9) * 7
+            + Math.cos(x * 0.028 - t * 1.4 + b) * 3.5;
+          if (x === 0) octx.moveTo(x, y);
+          else octx.lineTo(x, y);
+        }
+        const alpha = 0.05 + 0.045 * Math.sin(t * 1.6 + b);
+        octx.strokeStyle = `rgba(125, 211, 252, ${alpha.toFixed(3)})`;
+        octx.stroke();
+      }
+
+      requestAnimationFrame(renderOcean);
+    }
+    requestAnimationFrame(renderOcean);
+
+    // =========================================================================
+    // 3. ЗВУКОВОЙ ДВИЖОК (WEB AUDIO API) + ХУК ПОД БУДУЩИЕ MP3 ELEVENLABS
+    // =========================================================================
+    let audioCtx = null;
+    let seaNode = null;
+    let seaOn = false;
+    let sfxOn = true;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    // Задел под аудиопак ElevenLabs: позже сюда подключим массив MP3
+    function playVoiceTauntHook(category) {
+      // TODO v0.3: воспроизведение мужских реплик ElevenLabs (mp3) по category
+    }
+
+    function toggleSea() {
+      ensureAudio();
+      if (!audioCtx) return;
+      const btn = document.getElementById('btnSea');
+      if (seaOn) {
+        try { seaNode.stop(); } catch (e) {}
+        seaNode = null;
+        seaOn = false;
+        btn.classList.remove('active');
+        return;
+      }
+      const len = audioCtx.sampleRate * 3;
+      const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < len; i++) {
+        const w = Math.random() * 2 - 1;
+        data[i] = (last + 0.02 * w) / 1.02;
+        last = data[i];
+        data[i] *= 2.3;
+      }
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+
+      const filt = audioCtx.createBiquadFilter();
+      filt.type = 'lowpass';
+      filt.frequency.value = 320;
+
+      const lfo = audioCtx.createOscillator();
+      lfo.frequency.value = 0.14;
+      const lfoG = audioCtx.createGain();
+      lfoG.gain.value = 170;
+      lfo.connect(lfoG);
+      lfoG.connect(filt.frequency);
+
+      const g = audioCtx.createGain();
+      g.gain.value = 0.14;
+
+      src.connect(filt);
+      filt.connect(g);
+      g.connect(audioCtx.destination);
+      src.start();
+      lfo.start();
+      seaNode = src;
+      seaOn = true;
+      btn.classList.add('active');
+    }
+
+    function playCannonShot() {
+      if (!sfxOn) return;
+      ensureAudio();
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(55, now + 0.14);
+      g.gain.setValueAtTime(0.28, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.connect(g);
+      g.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.16);
+    }
+
+    function playSplash() {
+      if (!sfxOn) return;
+      ensureAudio();
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.34, audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      const f = audioCtx.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.setValueAtTime(1250, now);
+      f.frequency.exponentialRampToValueAtTime(260, now + 0.32);
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.28, now);
+      g.gain.exponentialRampToValueAtTime(0.005, now + 0.34);
+      src.connect(f); f.connect(g); g.connect(audioCtx.destination);
+      src.start(now);
+    }
+
+    function playExplosion(heavy = false) {
+      if (!sfxOn) return;
+      ensureAudio();
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const dur = heavy ? 0.72 : 0.44;
+      const osc = audioCtx.createOscillator();
+      const og = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(heavy ? 110 : 145, now);
+      osc.frequency.exponentialRampToValueAtTime(24, now + dur);
+      og.gain.setValueAtTime(heavy ? 0.45 : 0.32, now);
+      og.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      osc.connect(og); og.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + dur);
+
+      const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      const f = audioCtx.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.setValueAtTime(heavy ? 900 : 720, now);
+      f.frequency.exponentialRampToValueAtTime(85, now + dur);
+      const ng = audioCtx.createGain();
+      ng.gain.setValueAtTime(heavy ? 0.48 : 0.34, now);
+      ng.gain.exponentialRampToValueAtTime(0.008, now + dur);
+      src.connect(f); f.connect(ng); ng.connect(audioCtx.destination);
+      src.start(now);
+    }
+
+    function playBubbles() {
+      if (!sfxOn) return;
+      ensureAudio();
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      for (let i = 0; i < 6; i++) {
+        const t = now + 0.14 + i * 0.1;
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'sine';
+        const base = 240 + Math.random() * 240;
+        osc.frequency.setValueAtTime(base, t);
+        osc.frequency.exponentialRampToValueAtTime(base * 2.1, t + 0.09);
+        g.gain.setValueAtTime(0.12, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(t); osc.stop(t + 0.11);
+      }
+    }
+
+    // =========================================================================
+    // 4. ДЕТАЛИЗИРОВАННЫЕ SVG-КОРАБЛИ С ПУШКАМИ, БАШНЯМИ И МОСТИКОМ
+    // =========================================================================
+    function buildShipSVG(len, horiz) {
+      // Рисуем корабль в базовой горизонтальной системе координат (len*100 x 100),
+      // а для вертикали поворачиваем весь SVG-контент на 90° — так сохраняются все пропорции.
+      const w = len * 100;
+      const h = 100;
+      const vbW = horiz ? w : h;
+      const vbH = horiz ? h : w;
+      const transform = horiz ? '' : `transform="translate(100, 0) rotate(90)"`;
+
+      let hullPath = '';
+      let details = '';
+
+      if (len === 4) {
+        // ЛИНКОР: острый нос, массивная надстройка, 3 двуствольные башни ГК
+        hullPath = `M 20,22 L ${w - 75},18 Q ${w - 22},24 ${w - 8},50 Q ${w - 22},76 ${w - 75},82 L 20,78 Q 8,66 8,50 Q 8,34 20,22 Z`;
+        details = `
+          <!-- Палубный настил -->
+          <path d="M 32,28 L ${w - 82},25 Q ${w - 38},32 ${w - 24},50 Q ${w - 38},68 ${w - 82},75 L 32,72 Z" fill="#334155" stroke="#64748B" stroke-width="1.5"/>
+          <!-- Кормовая башня (2 ствола назад) -->
+          <rect x="44" y="34" width="38" height="32" rx="7" fill="#64748B" stroke="#94A3B8" stroke-width="2"/>
+          <line x1="46" y1="43" x2="14" y2="43" stroke="#CBD5E1" stroke-width="4" stroke-linecap="round"/>
+          <line x1="46" y1="57" x2="14" y2="57" stroke="#CBD5E1" stroke-width="4" stroke-linecap="round"/>
+          <!-- Командный мостик и радар -->
+          <rect x="128" y="29" width="96" height="42" rx="8" fill="#1E293B" stroke="#94A3B8" stroke-width="2"/>
+          <rect x="148" y="36" width="52" height="28" rx="5" fill="#475569"/>
+          <circle cx="174" cy="50" r="8" fill="#38BDF8" opacity="0.85"/>
+          <line x1="174" y1="36" x2="174" y2="64" stroke="#E0F2FE" stroke-width="2" opacity="0.6"/>
+          <!-- Носовая башня №1 -->
+          <rect x="242" y="34" width="36" height="32" rx="7" fill="#64748B" stroke="#94A3B8" stroke-width="2"/>
+          <line x1="276" y1="43" x2="310" y2="43" stroke="#E2E8F0" stroke-width="4" stroke-linecap="round"/>
+          <line x1="276" y1="57" x2="310" y2="57" stroke="#E2E8F0" stroke-width="4" stroke-linecap="round"/>
+          <!-- Носовая башня №2 -->
+          <rect x="308" y="36" width="34" height="28" rx="6" fill="#64748B" stroke="#CBD5E1" stroke-width="2"/>
+          <line x1="340" y1="44" x2="376" y2="44" stroke="#F8FAFC" stroke-width="4" stroke-linecap="round"/>
+          <line x1="340" y1="56" x2="376" y2="56" stroke="#F8FAFC" stroke-width="4" stroke-linecap="round"/>
+        `;
+      } else if (len === 3) {
+        // КРЕЙСЕР: 2 башни, центральная рубка и дымовая труба
+        hullPath = `M 18,24 L ${w - 65},20 Q ${w - 20},27 ${w - 8},50 Q ${w - 20},73 ${w - 65},80 L 18,76 Q 8,65 8,50 Q 8,35 18,24 Z`;
+        details = `
+          <path d="M 28,30 L ${w - 72},27 Q ${w - 35},34 ${w - 22},50 Q ${w - 35},66 ${w - 72},73 L 28,70 Z" fill="#334155" stroke="#64748B" stroke-width="1.5"/>
+          <!-- Кормовая башня -->
+          <rect x="38" y="35" width="34" height="30" rx="6" fill="#64748B" stroke="#94A3B8" stroke-width="2"/>
+          <line x1="40" y1="44" x2="12" y2="44" stroke="#CBD5E1" stroke-width="3.8" stroke-linecap="round"/>
+          <line x1="40" y1="56" x2="12" y2="56" stroke="#CBD5E1" stroke-width="3.8" stroke-linecap="round"/>
+          <!-- Рубка -->
+          <rect x="108" y="30" width="76" height="40" rx="8" fill="#1E293B" stroke="#94A3B8" stroke-width="2"/>
+          <rect x="124" y="38" width="42" height="24" rx="4" fill="#475569"/>
+          <circle cx="145" cy="50" r="6.5" fill="#38BDF8" opacity="0.85"/>
+          <!-- Носовая башня -->
+          <rect x="206" y="35" width="36" height="30" rx="6" fill="#64748B" stroke="#CBD5E1" stroke-width="2"/>
+          <line x1="240" y1="44" x2="276" y2="44" stroke="#F8FAFC" stroke-width="3.8" stroke-linecap="round"/>
+          <line x1="240" y1="56" x2="276" y2="56" stroke="#F8FAFC" stroke-width="3.8" stroke-linecap="round"/>
+        `;
+      } else if (len === 2) {
+        // ЭСМИНЕЦ: стремительный силуэт, пушка на носу, торпедный аппарат
+        hullPath = `M 16,26 L ${w - 52},22 Q ${w - 18},30 ${w - 8},50 Q ${w - 18},70 ${w - 52},78 L 16,74 Q 8,64 8,50 Q 8,36 16,26 Z`;
+        details = `
+          <path d="M 24,32 L ${w - 58},29 Q ${w - 30},36 ${w - 20},50 Q ${w - 30},64 ${w - 58},71 L 24,68 Z" fill="#334155"/>
+          <!-- Рубка -->
+          <rect x="46" y="32" width="56" height="36" rx="7" fill="#1E293B" stroke="#94A3B8" stroke-width="2"/>
+          <circle cx="72" cy="50" r="5.5" fill="#38BDF8" opacity="0.85"/>
+          <!-- Носовая пушка -->
+          <rect x="122" y="36" width="32" height="28" rx="6" fill="#64748B" stroke="#CBD5E1" stroke-width="2"/>
+          <line x1="152" y1="45" x2="184" y2="45" stroke="#F8FAFC" stroke-width="3.6" stroke-linecap="round"/>
+          <line x1="152" y1="55" x2="184" y2="55" stroke="#F8FAFC" stroke-width="3.6" stroke-linecap="round"/>
+        `;
+      } else {
+        // ТОРПЕДНЫЙ КАТЕР (1 клетка)
+        hullPath = `M 16,28 L 54,23 Q 82,30 92,50 Q 82,70 54,77 L 16,72 Q 9,62 9,50 Q 9,38 16,28 Z`;
+        details = `
+          <rect x="24" y="36" width="32" height="28" rx="6" fill="#1E293B" stroke="#94A3B8" stroke-width="2"/>
+          <circle cx="40" cy="50" r="5" fill="#38BDF8" opacity="0.9"/>
+          <line x1="56" y1="50" x2="86" y2="50" stroke="#F8FAFC" stroke-width="4" stroke-linecap="round"/>
+        `;
+      }
+
+      return `
+        <svg viewBox="0 0 ${vbW} ${vbH}" width="100%" height="100%" preserveAspectRatio="none">
+          <g ${transform}>
+            <!-- Пенный след вокруг корпуса -->
+            <path d="${hullPath}" fill="none" stroke="rgba(186, 230, 253, 0.35)" stroke-width="6"/>
+            <!-- Стальной корпус -->
+            <path d="${hullPath}" fill="#475569" stroke="#CBD5E1" stroke-width="2.4"/>
+            ${details}
+          </g>
+        </svg>
+      `;
+    }
+
+    // =========================================================================
+    // 5. CANVAS ДВИЖОК БОЕВЫХ ЭФФЕКТОВ (СНАРЯДЫ, ВЗРЫВЫ, ЖИВОЙ ОГОНЬ, ПУЗЫРИ)
+    // =========================================================================
+    function createBoardFxEngine(canvasEl, getBoardFn) {
+      const ctx = canvasEl.getContext('2d');
+      const particles = [];
+      const rings = [];
+      const tracers = [];
+
+      function resize() {
+        const rect = canvasEl.parentElement.getBoundingClientRect();
+        if (!rect.width) return;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvasEl.width = rect.width * dpr;
+        canvasEl.height = rect.height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function cellPos(r, c) {
+        const rect = canvasEl.parentElement.getBoundingClientRect();
+        const cw = rect.width / 10;
+        const ch = rect.height / 10;
+        return { x: (c + 0.5) * cw, y: (r + 0.5) * ch, cw };
+      }
+
+      function launchShell(r, c, fromBottom, onImpact) {
+        const rect = canvasEl.parentElement.getBoundingClientRect();
+        const target = cellPos(r, c);
+        const startX = rect.width * (0.25 + Math.random() * 0.5);
+        const startY = fromBottom ? rect.height + 16 : -16;
+        tracers.push({
+          sx: startX, sy: startY,
+          tx: target.x, ty: target.y,
+          p: 0,
+          speed: 0.11,
+          onImpact
+        });
+      }
+
+      function splash(r, c) {
+        const { x, y, cw } = cellPos(r, c);
+        rings.push({ x, y, r: 3, maxR: cw * 0.72, alpha: 0.95, color: '#7DD3FC', lw: 2.5 });
+        rings.push({ x, y, r: 2, maxR: cw * 0.45, alpha: 0.8, color: '#E0F2FE', lw: 1.5 });
+        for (let i = 0; i < 16; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const s = 1 + Math.random() * 2.6;
+          particles.push({
+            x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1,
+            size: 1.8 + Math.random() * 2.6,
+            color: Math.random() > 0.4 ? '#BAE6FD' : '#38BDF8',
+            alpha: 1, decay: 0.032, grav: 0.09
+          });
+        }
+      }
+
+      function explode(r, c, heavy = false) {
+        const { x, y, cw } = cellPos(r, c);
+        rings.push({ x, y, r: 4, maxR: cw * (heavy ? 1.45 : 0.95), alpha: 1, color: '#F97316', lw: heavy ? 4.5 : 3 });
+        const colors = ['#FEF08A', '#FB923C', '#EF4444', '#1E293B'];
+        const count = heavy ? 34 : 22;
+        for (let i = 0; i < count; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const s = 1.4 + Math.random() * (heavy ? 5.2 : 3.4);
+          particles.push({
+            x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+            size: (heavy ? 3.2 : 2.4) + Math.random() * 4.2,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            alpha: 1, decay: 0.02 + Math.random() * 0.018, grav: 0.03
+          });
+        }
+      }
+
+      function tick() {
+        const rect = canvasEl.parentElement.getBoundingClientRect();
+        if (rect.width > 0) {
+          const w = rect.width, h = rect.height;
+          ctx.clearRect(0, 0, w, h);
+
+          // Постоянный живой огонь/дым на раненых клетках и пузыри на потопленных
+          const board = getBoardFn();
+          if (board) {
+            const cw = w / 10;
+            for (let r = 0; r < 10; r++) {
+              for (let c = 0; c < 10; c++) {
+                const st = board[r][c].state;
+                if (st === 'hit' && Math.random() < 0.28) {
+                  const cx = (c + 0.5) * cw + (Math.random() - 0.5) * cw * 0.35;
+                  const cy = (r + 0.58) * cw;
+                  const isSmoke = Math.random() < 0.32;
+                  particles.push({
+                    x: cx, y: cy,
+                    vx: (Math.random() - 0.5) * 0.35,
+                    vy: -(0.6 + Math.random() * 1.1),
+                    size: isSmoke ? 3.5 + Math.random() * 3.5 : 2.5 + Math.random() * 3.2,
+                    color: isSmoke ? 'rgba(15, 23, 42, 0.7)' : (Math.random() > 0.45 ? '#F97316' : '#FEF08A'),
+                    alpha: isSmoke ? 0.65 : 0.95,
+                    decay: isSmoke ? 0.024 : 0.048,
+                    grav: -0.015
+                  });
+                } else if (st === 'sunk' && Math.random() < 0.09) {
+                  const cx = (c + 0.2 + Math.random() * 0.6) * cw;
+                  const cy = (r + 0.75) * cw;
+                  particles.push({
+                    x: cx, y: cy,
+                    vx: (Math.random() - 0.5) * 0.25,
+                    vy: -(0.4 + Math.random() * 0.65),
+                    size: 1.8 + Math.random() * 2.5,
+                    color: '#BAE6FD',
+                    alpha: 0.85,
+                    decay: 0.02,
+                    grav: 0,
+                    isBubble: true
+                  });
+                }
+              }
+            }
+          }
+
+          // Трассеры летящих снарядов
+          for (let i = tracers.length - 1; i >= 0; i--) {
+            const tr = tracers[i];
+            tr.p += tr.speed;
+            if (tr.p >= 1) {
+              const cb = tr.onImpact;
+              tracers.splice(i, 1);
+              if (cb) cb();
+              continue;
+            }
+            const curX = tr.sx + (tr.tx - tr.sx) * tr.p;
+            const curY = tr.sy + (tr.ty - tr.sy) * tr.p - Math.sin(tr.p * Math.PI) * 34;
+            const prevP = Math.max(0, tr.p - 0.14);
+            const prevX = tr.sx + (tr.tx - tr.sx) * prevP;
+            const prevY = tr.sy + (tr.ty - tr.sy) * prevP - Math.sin(prevP * Math.PI) * 34;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(prevX, prevY);
+            ctx.lineTo(curX, curY);
+            ctx.strokeStyle = '#FEF08A';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.shadowColor = '#F97316';
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // Ударные волны
+          for (let i = rings.length - 1; i >= 0; i--) {
+            const rg = rings[i];
+            rg.r += (rg.maxR - rg.r) * 0.18;
+            rg.alpha -= 0.045;
+            if (rg.alpha <= 0) { rings.splice(i, 1); continue; }
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(rg.x, rg.y, rg.r, 0, Math.PI * 2);
+            ctx.strokeStyle = rg.color;
+            ctx.globalAlpha = rg.alpha;
+            ctx.lineWidth = rg.lw;
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // Частицы (огонь, дым, брызги, пузыри)
+          for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += p.grav;
+            p.alpha -= p.decay;
+            if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+            ctx.save();
+            ctx.globalAlpha = p.alpha;
+            if (p.isBubble) {
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+              ctx.strokeStyle = p.color;
+              ctx.lineWidth = 1.2;
+              ctx.stroke();
+            } else {
+              ctx.fillStyle = p.color;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+
+      requestAnimationFrame(tick);
+      return { resize, launchShell, splash, explode };
+    }
+
+    // =========================================================================
+    // 6. ЦИНИЧНЫЕ ФРАЗЫ (ВЗРОСЛЫЙ ТОН, БЕЗ МАТА)
     // =========================================================================
     const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'З', 'И', 'К'];
+    const SHIP_SIZES = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
 
     const TAUNTS = {
       playerMiss: [
         "Мимо. Чайки аплодируют стоя.",
-        "В молоко, салага. Тебе бы прицел протереть.",
+        "В молоко, салага. Прицел протереть не пробовал?",
         "Эх, морячок… линейку приложить?",
         "Красивый всплеск. Бесполезный, но красивый.",
         "Пустая вода. Ты рыбу глушишь или воюешь?",
-        "С такой точностью только на диване командовать.",
-        "Мимо. Соперник даже кофе не расплескал."
+        "С такой точностью только на диване командовать."
       ],
       playerHit: [
         "Попал! Запахло палёной тельняшкой.",
         "Ранил! Тащи ведро, сейчас зальёт.",
         "Ой, больно? Это мы ещё не пристрелялись.",
         "Есть пробоина! Кто-то плохо прятал своё корыто.",
-        "Горячо! Кажется, у кого-то подгорает не только палуба.",
-        "Точно в борт. Продолжай, не давай опомниться."
+        "Горячо! Кажется, у кого-то подгорает не только палуба."
       ],
       playerSink: [
         "Убил! Передавай привет крабам.",
@@ -807,13 +1179,12 @@
       enemyMiss: [
         "Враг мажет. Видимо, стреляет с закрытыми глазами.",
         "Мимо тебя! Ему бы компас починить.",
-        "Вокруг да около. Твой ход, покажи как надо."
+        "Вокруг да около. Твой ход, покажи класс."
       ],
       enemyHit: [
         "Прилетело! Не стой столбом, отвечай.",
         "Тебе борт поцарапали. Обидно, да?",
-        "Твой корабль горит, а ты на него любуешься.",
-        "Ауч! Тебя нащупали, морячок."
+        "Твой корабль горит, а ты на него любуешься."
       ],
       enemySink: [
         "Твой корабль пошёл к рыбам. Соберись!",
@@ -824,323 +1195,91 @@
 
     const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
-    // =========================================================================
-    // 3. ПРОЦЕДУРНЫЙ ЗВУК (WEB AUDIO API) + ОЗВУЧКА РЕПЛИК
-    // =========================================================================
-    let audioCtx = null;
-    let seaNode = null;
-    let seaPlaying = false;
-    let voiceEnabled = true;
-
-    function ensureAudio() {
-      if (!audioCtx) {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (AC) audioCtx = new AC();
-      }
-      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    function showTaunt(badge, text, type = '') {
+      const card = document.getElementById('tauntCard');
+      card.className = 'taunt-card ' + type;
+      card.innerHTML = `<span class="taunt-badge">${badge}</span><span>${text}</span>`;
+      void card.offsetWidth;
+      card.classList.add('pop');
+      if (type) playVoiceTauntHook(type);
     }
 
-    function toggleSeaAmbience() {
-      ensureAudio();
-      if (!audioCtx) return;
-      const btn = document.getElementById('btnSea');
-      if (seaPlaying) {
-        try { seaNode.stop(); } catch (e) {}
-        seaNode = null;
-        seaPlaying = false;
-        btn.classList.remove('active');
-        return;
-      }
-      const bufferSize = audioCtx.sampleRate * 3;
-      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-      const data = buffer.getChannelData(0);
-      let lastOut = 0.0;
-      for (let i = 0; i < bufferSize; i++) {
-        const white = Math.random() * 2 - 1;
-        data[i] = (lastOut + (0.02 * white)) / 1.02;
-        lastOut = data[i];
-        data[i] *= 2.4;
-      }
-      const noise = audioCtx.createBufferSource();
-      noise.buffer = buffer;
-      noise.loop = true;
-
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 340;
-
-      const lfo = audioCtx.createOscillator();
-      lfo.frequency.value = 0.16;
-      const lfoGain = audioCtx.createGain();
-      lfoGain.gain.value = 180;
-      lfo.connect(lfoGain);
-      lfoGain.connect(filter.frequency);
-
-      const master = audioCtx.createGain();
-      master.gain.value = 0.16;
-
-      noise.connect(filter);
-      filter.connect(master);
-      master.connect(audioCtx.destination);
-
-      noise.start();
-      lfo.start();
-      seaNode = noise;
-      seaPlaying = true;
-      btn.classList.add('active');
-    }
-
-    function playSplashSfx() {
-      ensureAudio();
-      if (!audioCtx) return;
-      const now = audioCtx.currentTime;
-      const bufferSize = audioCtx.sampleRate * 0.35;
-      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-
-      const src = audioCtx.createBufferSource();
-      src.buffer = buffer;
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(1100, now);
-      filter.frequency.exponentialRampToValueAtTime(280, now + 0.32);
-
-      const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(0.32, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.34);
-
-      src.connect(filter);
-      filter.connect(gain);
-      gain.connect(audioCtx.destination);
-      src.start(now);
-    }
-
-    function playExplosionSfx(heavy = false) {
-      ensureAudio();
-      if (!audioCtx) return;
-      const now = audioCtx.currentTime;
-      const dur = heavy ? 0.72 : 0.45;
-
-      // Суб-бас удар
-      const osc = audioCtx.createOscillator();
-      const oscGain = audioCtx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(heavy ? 115 : 140, now);
-      osc.frequency.exponentialRampToValueAtTime(28, now + dur);
-      oscGain.gain.setValueAtTime(heavy ? 0.48 : 0.36, now);
-      oscGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-      osc.connect(oscGain);
-      oscGain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + dur);
-
-      // Треск взрыва
-      const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
-      const data = buf.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-      const noise = audioCtx.createBufferSource();
-      noise.buffer = buf;
-      const filt = audioCtx.createBiquadFilter();
-      filt.type = 'lowpass';
-      filt.frequency.setValueAtTime(heavy ? 950 : 750, now);
-      filt.frequency.exponentialRampToValueAtTime(90, now + dur);
-      const nGain = audioCtx.createGain();
-      nGain.gain.setValueAtTime(heavy ? 0.5 : 0.35, now);
-      nGain.gain.exponentialRampToValueAtTime(0.01, now + dur);
-      noise.connect(filt);
-      filt.connect(nGain);
-      nGain.connect(audioCtx.destination);
-      noise.start(now);
-    }
-
-    function playBubblesSfx() {
-      ensureAudio();
-      if (!audioCtx) return;
-      const now = audioCtx.currentTime;
-      for (let i = 0; i < 6; i++) {
-        const t = now + 0.15 + i * 0.11;
-        const osc = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-        osc.type = 'sine';
-        const base = 240 + Math.random() * 220;
-        osc.frequency.setValueAtTime(base, t);
-        osc.frequency.exponentialRampToValueAtTime(base * 2.1, t + 0.09);
-        g.gain.setValueAtTime(0.14, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-        osc.connect(g);
-        g.connect(audioCtx.destination);
-        osc.start(t);
-        osc.stop(t + 0.11);
-      }
-    }
-
-    function speakTaunt(text) {
-      if (!voiceEnabled || !('speechSynthesis' in window)) return;
-      try {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'ru-RU';
-        u.rate = 1.08;
-        u.pitch = 0.86;
-        window.speechSynthesis.speak(u);
-      } catch (e) {}
+    function shakeScreen(heavy = false) {
+      const root = document.getElementById('appRoot');
+      root.classList.remove('shake-light', 'shake-heavy');
+      void root.offsetWidth;
+      root.classList.add(heavy ? 'shake-heavy' : 'shake-light');
     }
 
     // =========================================================================
-    // 4. CANVAS МОУШН-ДВИЖОК (ВЗРЫВЫ, ВСПЛЕСКИ, ДЫМ, ПУЗЫРИ)
+    // 7. СОСТОЯНИЕ ИГРЫ И ФАЗА РАССТАНОВКИ (АВТО + ПЕРЕТАСКИВАНИЕ / ПОВОРОТ)
     // =========================================================================
-    const canvas = document.getElementById('fxCanvas');
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    let rings = [];
-
-    function resizeCanvas() {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      canvas.width = rect.width * window.devicePixelRatio;
-      canvas.height = rect.height * window.devicePixelRatio;
-      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
-    }
-    window.addEventListener('resize', resizeCanvas);
-
-    function cellCenter(r, c) {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      const cw = rect.width / 10;
-      const ch = rect.height / 10;
-      return { x: (c + 0.5) * cw, y: (r + 0.5) * ch, cw };
-    }
-
-    function spawnSplashFx(r, c) {
-      const { x, y } = cellCenter(r, c);
-      rings.push({ x, y, r: 4, maxR: 26, alpha: 0.9, color: '#2B7DE9', lw: 2.5 });
-      rings.push({ x, y, r: 2, maxR: 16, alpha: 0.7, color: '#93C5FD', lw: 1.5 });
-      for (let i = 0; i < 14; i++) {
-        const ang = Math.random() * Math.PI * 2;
-        const spd = 1.2 + Math.random() * 2.5;
-        particles.push({
-          x, y,
-          vx: Math.cos(ang) * spd,
-          vy: Math.sin(ang) * spd - 0.8,
-          size: 2 + Math.random() * 3,
-          color: Math.random() > 0.4 ? '#3B82F6' : '#E0F2FE',
-          alpha: 1,
-          decay: 0.032,
-          gravity: 0.09
-        });
-      }
-    }
-
-    function spawnExplosionFx(r, c, heavy = false) {
-      const { x, y } = cellCenter(r, c);
-      rings.push({
-        x, y, r: 4,
-        maxR: heavy ? 48 : 34,
-        alpha: 1,
-        color: '#F97316',
-        lw: heavy ? 4 : 3
-      });
-      const count = heavy ? 32 : 20;
-      const colors = ['#FEF08A', '#F97316', '#EF4444', '#1F2937'];
-      for (let i = 0; i < count; i++) {
-        const ang = Math.random() * Math.PI * 2;
-        const spd = 1.5 + Math.random() * (heavy ? 4.8 : 3.4);
-        particles.push({
-          x, y,
-          vx: Math.cos(ang) * spd,
-          vy: Math.sin(ang) * spd,
-          size: (heavy ? 3.5 : 2.5) + Math.random() * 4.5,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          alpha: 1,
-          decay: 0.022 + Math.random() * 0.018,
-          gravity: 0.04
-        });
-      }
-    }
-
-    function animateFx() {
-      const w = canvas.width / window.devicePixelRatio;
-      const h = canvas.height / window.devicePixelRatio;
-      ctx.clearRect(0, 0, w, h);
-
-      for (let i = rings.length - 1; i >= 0; i--) {
-        const rg = rings[i];
-        rg.r += (rg.maxR - rg.r) * 0.18;
-        rg.alpha -= 0.045;
-        if (rg.alpha <= 0) { rings.splice(i, 1); continue; }
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(rg.x, rg.y, rg.r, 0, Math.PI * 2);
-        ctx.strokeStyle = rg.color;
-        ctx.globalAlpha = rg.alpha;
-        ctx.lineWidth = rg.lw;
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += p.gravity;
-        p.alpha -= p.decay;
-        if (p.alpha <= 0) { particles.splice(i, 1); continue; }
-        ctx.save();
-        ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-
-      requestAnimationFrame(animateFx);
-    }
-
-    // =========================================================================
-    // 5. ИГРОВАЯ ЛОГИКА МОРСКОГО БОЯ
-    // =========================================================================
-    const SHIP_SIZES = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
-
-    let enemyBoard, myBoard;
-    let enemyShips, myShips;
+    let phase = 'setup'; // 'setup' | 'battle' | 'over'
+    let myBoard = null, myShips = [];
+    let enemyBoard = null, enemyShips = [];
     let isPlayerTurn = true;
-    let gameOver = false;
-    let shotCounter = 0;
+    let shotLock = false;
     let botTargets = [];
 
-    function createEmptyBoard() {
+    const enemyFx = createBoardFxEngine(document.getElementById('enemyFxCanvas'), () => enemyBoard);
+    const myFx = createBoardFxEngine(document.getElementById('myFxCanvas'), () => myBoard);
+
+    window.addEventListener('resize', () => {
+      enemyFx.resize();
+      myFx.resize();
+    });
+
+    function emptyBoard() {
       return Array.from({ length: 10 }, () =>
         Array.from({ length: 10 }, () => ({ shipId: null, state: 'empty' }))
       );
     }
 
-    function placeFleetRandomly() {
-      const board = createEmptyBoard();
-      const ships = [];
+    function canPlace(board, r, c, len, horiz, ignoreShipId = null) {
+      if (r < 0 || c < 0) return false;
+      if (horiz && c + len > 10) return false;
+      if (!horiz && r + len > 10) return false;
+      for (let i = 0; i < len; i++) {
+        const nr = horiz ? r : r + i;
+        const nc = horiz ? c + i : c;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const tr = nr + dr, tc = nc + dc;
+            if (tr >= 0 && tr < 10 && tc >= 0 && tc < 10) {
+              const occ = board[tr][tc].shipId;
+              if (occ !== null && occ !== ignoreShipId) return false;
+            }
+          }
+        }
+      }
+      return true;
+    }
 
+    function rebuildBoardFromShips(ships) {
+      const board = emptyBoard();
+      ships.forEach(s => {
+        s.cells = [];
+        for (let i = 0; i < s.len; i++) {
+          const r = s.horiz ? s.r : s.r + i;
+          const c = s.horiz ? s.c + i : s.c;
+          board[r][c].shipId = s.id;
+          s.cells.push({ r, c });
+        }
+      });
+      return board;
+    }
+
+    function generateRandomFleet() {
+      const board = emptyBoard();
+      const ships = [];
       for (let id = 0; id < SHIP_SIZES.length; id++) {
         const len = SHIP_SIZES[id];
-        let placed = false;
-        for (let attempt = 0; attempt < 300 && !placed; attempt++) {
+        let ok = false;
+        for (let tries = 0; tries < 400 && !ok; tries++) {
           const horiz = Math.random() < 0.5;
           const r = Math.floor(Math.random() * (horiz ? 10 : 11 - len));
           const c = Math.floor(Math.random() * (horiz ? 11 - len : 10));
-
-          let ok = true;
-          for (let i = 0; i < len && ok; i++) {
-            const nr = horiz ? r : r + i;
-            const nc = horiz ? c + i : c;
-            for (let dr = -1; dr <= 1; dr++) {
-              for (let dc = -1; dc <= 1; dc++) {
-                const tr = nr + dr, tc = nc + dc;
-                if (tr >= 0 && tr < 10 && tc >= 0 && tc < 10 && board[tr][tc].shipId !== null) {
-                  ok = false;
-                }
-              }
-            }
-          }
-
-          if (ok) {
+          if (canPlace(board, r, c, len, horiz)) {
             const cells = [];
             for (let i = 0; i < len; i++) {
               const nr = horiz ? r : r + i;
@@ -1148,15 +1287,15 @@
               board[nr][nc].shipId = id;
               cells.push({ r: nr, c: nc });
             }
-            ships.push({ id, len, cells, hits: 0, sunk: false });
-            placed = true;
+            ships.push({ id, len, r, c, horiz, cells, hits: 0, sunk: false });
+            ok = true;
           }
         }
       }
       return { board, ships };
     }
 
-    function markHaloAroundShip(board, ship) {
+    function markHalo(board, ship) {
       ship.cells.forEach(({ r, c }) => {
         for (let dr = -1; dr <= 1; dr++) {
           for (let dc = -1; dc <= 1; dc++) {
@@ -1169,163 +1308,280 @@
       });
     }
 
-    function showTaunt(tag, text, type = '') {
-      const bubble = document.getElementById('tauntBubble');
-      bubble.className = 'taunt-bubble ' + (type ? 'type-' + type : '');
-      bubble.innerHTML = `<span class="taunt-tag">${tag}</span><span>${text}</span>`;
-      void bubble.offsetWidth;
-      bubble.classList.add('pop');
-      speakTaunt(text);
-    }
-
-    function triggerScreenShake(heavy = false) {
-      const root = document.getElementById('appRoot');
-      root.classList.remove('shake-light', 'shake-heavy');
-      void root.offsetWidth;
-      root.classList.add(heavy ? 'shake-heavy' : 'shake-light');
-    }
-
-    function addHistoryEntry(who, coordStr, resultType, label) {
-      shotCounter++;
-      document.getElementById('shotCount').textContent = shotCounter;
-      const list = document.getElementById('historyList');
-      if (shotCounter === 1) list.innerHTML = '';
-
-      const item = document.createElement('div');
-      item.className = `history-item ${resultType} ${who === 'enemy' ? 'enemy-shot' : ''}`;
-      item.innerHTML = `
-        <span class="hist-coord">${who === 'me' ? '🎯' : '💣'} ${coordStr}</span>
-        <span class="hist-res">${label}</span>
-      `;
-      list.prepend(item);
-    }
-
-    function updateHud() {
-      const myAlive = myShips.filter(s => !s.sunk).length;
-      const enemyAlive = enemyShips.filter(s => !s.sunk).length;
-      document.getElementById('myShipsLeft').textContent = `Ты: ${myAlive}`;
-      document.getElementById('enemyShipsLeft').textContent = `Враг: ${enemyAlive}`;
-
-      const dot = document.getElementById('turnDot');
-      const txt = document.getElementById('turnText');
-      if (isPlayerTurn) {
-        dot.classList.remove('enemy');
-        txt.textContent = 'Твой залп, капитан';
-      } else {
-        dot.classList.add('enemy');
-        txt.textContent = 'Соперник целится…';
-      }
-    }
-
-    function renderBoards() {
-      const eGrid = document.getElementById('enemyGrid');
-      eGrid.innerHTML = '';
+    // =========================================================================
+    // 8. ОТРИСОВКА ПОЛЕЙ И КОРАБЛЕЙ + DRAG-AND-DROP ПАЛЬЦЕМ
+    // =========================================================================
+    function renderGridCells(containerId, board, isEnemy) {
+      const grid = document.getElementById(containerId);
+      grid.innerHTML = '';
       for (let r = 0; r < 10; r++) {
         for (let c = 0; c < 10; c++) {
-          const cellData = enemyBoard[r][c];
+          const data = board[r][c];
           const el = document.createElement('div');
           el.className = 'cell';
-          if (cellData.state !== 'empty') {
-            el.classList.add('shot', cellData.state);
-          }
+          el.dataset.r = r;
+          el.dataset.c = c;
+          if (data.state !== 'empty') el.classList.add('shot', data.state);
 
           const coord = document.createElement('span');
           coord.className = 'cell-coord';
           coord.textContent = `${LETTERS[c]}${r + 1}`;
           el.appendChild(coord);
 
-          if (cellData.state === 'hit') {
-            const flame = document.createElement('div');
-            flame.className = 'flame-core';
-            el.appendChild(flame);
-          } else if (cellData.state === 'sunk') {
-            for (let b = 0; b < 3; b++) {
-              const bub = document.createElement('div');
-              bub.className = 'bubble';
-              const sz = 4 + b * 2;
-              bub.style.width = sz + 'px';
-              bub.style.height = sz + 'px';
-              bub.style.left = (18 + b * 26) + '%';
-              bub.style.animationDelay = (b * 0.55) + 's';
-              el.appendChild(bub);
-            }
+          if (isEnemy) {
+            el.addEventListener('click', () => handlePlayerShot(r, c));
           }
-
-          el.addEventListener('click', () => playerShoot(r, c));
-          eGrid.appendChild(el);
-        }
-      }
-
-      const mGrid = document.getElementById('myGrid');
-      mGrid.innerHTML = '';
-      for (let r = 0; r < 10; r++) {
-        for (let c = 0; c < 10; c++) {
-          const cellData = myBoard[r][c];
-          const el = document.createElement('div');
-          el.className = 'my-cell';
-          if (cellData.shipId !== null) el.classList.add('ship');
-          if (cellData.state !== 'empty') el.classList.add(cellData.state);
-          mGrid.appendChild(el);
+          grid.appendChild(el);
         }
       }
     }
 
-    function playerShoot(r, c) {
-      if (gameOver || !isPlayerTurn) return;
+    function renderShipSprites(layerId, ships, isEnemy) {
+      const layer = document.getElementById(layerId);
+      layer.innerHTML = '';
+
+      ships.forEach(ship => {
+        // На поле врага корабль проявляется только когда он потоплен
+        if (isEnemy && !ship.sunk) return;
+
+        const el = document.createElement('div');
+        el.className = 'ship-sprite';
+        if (!isEnemy && phase === 'setup') el.classList.add('draggable');
+        if (ship.sunk) el.classList.add('sunk-ship');
+
+        el.style.left = (ship.c * 10) + '%';
+        el.style.top = (ship.r * 10) + '%';
+        el.style.width = (ship.horiz ? ship.len * 10 : 10) + '%';
+        el.style.height = (ship.horiz ? 10 : ship.len * 10) + '%';
+        el.innerHTML = buildShipSVG(ship.len, ship.horiz);
+
+        if (!isEnemy && phase === 'setup') {
+          attachShipPointerDrag(el, ship);
+        }
+
+        layer.appendChild(el);
+      });
+    }
+
+    function clearDragHighlights() {
+      document.querySelectorAll('#myGrid .cell.drag-ok, #myGrid .cell.drag-bad').forEach(el => {
+        el.classList.remove('drag-ok', 'drag-bad');
+      });
+    }
+
+    function highlightFootprint(r, c, len, horiz, valid) {
+      clearDragHighlights();
+      for (let i = 0; i < len; i++) {
+        const nr = horiz ? r : r + i;
+        const nc = horiz ? c + i : c;
+        if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10) {
+          const cellEl = document.querySelector(`#myGrid .cell[data-r="${nr}"][data-c="${nc}"]`);
+          if (cellEl) cellEl.classList.add(valid ? 'drag-ok' : 'drag-bad');
+        }
+      }
+    }
+
+    function attachShipPointerDrag(el, ship) {
+      el.addEventListener('pointerdown', (e) => {
+        if (phase !== 'setup') return;
+        e.preventDefault();
+        el.setPointerCapture(e.pointerId);
+
+        const stageRect = document.getElementById('myStage').getBoundingClientRect();
+        const cellW = stageRect.width / 10;
+        const cellH = stageRect.height / 10;
+
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const origRect = el.getBoundingClientRect();
+        const grabOffsetX = startX - origRect.left;
+        const grabOffsetY = startY - origRect.top;
+
+        let isDragging = false;
+        let ghost = null;
+        let targetR = ship.r;
+        let targetC = ship.c;
+        let isValid = true;
+
+        function onMove(ev) {
+          const dist = Math.hypot(ev.clientX - startX, ev.clientY - startY);
+          if (!isDragging && dist > 7) {
+            isDragging = true;
+            haptic('light');
+            el.classList.add('dragging-origin');
+
+            ghost = document.createElement('div');
+            ghost.className = 'ship-sprite drag-ghost';
+            ghost.style.width = (ship.horiz ? ship.len * 10 : 10) + '%';
+            ghost.style.height = (ship.horiz ? 10 : ship.len * 10) + '%';
+            ghost.innerHTML = buildShipSVG(ship.len, ship.horiz);
+            document.getElementById('myShipsLayer').appendChild(ghost);
+          }
+
+          if (isDragging && ghost) {
+            const relLeft = ev.clientX - stageRect.left - grabOffsetX;
+            const relTop = ev.clientY - stageRect.top - grabOffsetY;
+
+            const maxC = ship.horiz ? 10 - ship.len : 9;
+            const maxR = ship.horiz ? 9 : 10 - ship.len;
+            targetC = Math.max(0, Math.min(maxC, Math.round(relLeft / cellW)));
+            targetR = Math.max(0, Math.min(maxR, Math.round(relTop / cellH)));
+
+            ghost.style.left = (relLeft / stageRect.width * 100) + '%';
+            ghost.style.top = (relTop / stageRect.height * 100) + '%';
+
+            isValid = canPlace(myBoard, targetR, targetC, ship.len, ship.horiz, ship.id);
+            highlightFootprint(targetR, targetC, ship.len, ship.horiz, isValid);
+          }
+        }
+
+        function onUp() {
+          el.removeEventListener('pointermove', onMove);
+          el.removeEventListener('pointerup', onUp);
+          el.removeEventListener('pointercancel', onUp);
+          clearDragHighlights();
+
+          if (ghost) ghost.remove();
+          el.classList.remove('dragging-origin');
+
+          if (!isDragging) {
+            // Короткий ТАП -> Поворот корабля на 90°
+            if (ship.len === 1) return;
+            const nextHoriz = !ship.horiz;
+            // Пробуем повернуть на месте или со смещением к краю
+            let placed = false;
+            const maxC = nextHoriz ? 10 - ship.len : 9;
+            const maxR = nextHoriz ? 9 : 10 - ship.len;
+            const tryC = Math.min(ship.c, maxC);
+            const tryR = Math.min(ship.r, maxR);
+
+            if (canPlace(myBoard, tryR, tryC, ship.len, nextHoriz, ship.id)) {
+              ship.r = tryR;
+              ship.c = tryC;
+              ship.horiz = nextHoriz;
+              myBoard = rebuildBoardFromShips(myShips);
+              haptic('selection');
+              placed = true;
+            }
+            if (!placed) {
+              haptic('warning');
+              showTaunt('ТЕСНО', 'Здесь не развернуться — мешает соседний борт.', 'hit');
+            }
+            renderAll();
+          } else {
+            // Окончание перетаскивания
+            if (isValid) {
+              ship.r = targetR;
+              ship.c = targetC;
+              myBoard = rebuildBoardFromShips(myShips);
+              haptic('medium');
+            } else {
+              haptic('warning');
+              showTaunt('СТОП', 'Корабли не могут касаться друг друга даже углами.', 'hit');
+            }
+            renderAll();
+          }
+        }
+
+        el.addEventListener('pointermove', onMove);
+        el.addEventListener('pointerup', onUp);
+        el.addEventListener('pointercancel', onUp);
+      });
+    }
+
+    function updateHud() {
+      const myAlive = myShips.filter(s => !s.sunk).length;
+      const enemyAlive = enemyShips.filter(s => !s.sunk).length;
+      document.getElementById('myCount').textContent = `Ты: ${myAlive}`;
+      document.getElementById('enemyCount').textContent = `Враг: ${enemyAlive}`;
+
+      const dot = document.getElementById('turnDot');
+      const txt = document.getElementById('turnText');
+      dot.className = 'pulse-dot';
+
+      if (phase === 'setup') {
+        dot.classList.add('setup');
+        txt.textContent = 'Расстановка флота';
+      } else if (phase === 'battle') {
+        if (isPlayerTurn) {
+          txt.textContent = 'Твой залп, капитан';
+        } else {
+          dot.classList.add('enemy');
+          txt.textContent = 'Соперник целится…';
+        }
+      } else {
+        txt.textContent = enemyAlive === 0 ? 'Чистая победа!' : 'Флот потерян';
+      }
+    }
+
+    function renderAll() {
+      if (phase !== 'setup') {
+        renderGridCells('enemyGrid', enemyBoard, true);
+        renderShipSprites('enemyShipsLayer', enemyShips, true);
+      }
+      renderGridCells('myGrid', myBoard, false);
+      renderShipSprites('myShipsLayer', myShips, false);
+      updateHud();
+    }
+
+    // =========================================================================
+    // 9. БОЕВАЯ МЕХАНИКА (ЗАЛПЫ, ТРАССЕРЫ, УМНЫЙ БОТ)
+    // =========================================================================
+    function handlePlayerShot(r, c) {
+      if (phase !== 'battle' || !isPlayerTurn || shotLock) return;
       const cell = enemyBoard[r][c];
       if (cell.state !== 'empty') {
         haptic('warning');
-        showTaunt('СТОП', `В ${LETTERS[c]}${r + 1} уже били. Память как у рыбки?`, 'miss');
+        showTaunt('ПОВТОР', `В ${LETTERS[c]}${r + 1} уже стреляли. Память как у рыбки?`, '');
         return;
       }
 
       ensureAudio();
-      const coordStr = `${LETTERS[c]}${r + 1}`;
+      shotLock = true;
+      playCannonShot();
+      haptic('light');
 
-      if (cell.shipId === null) {
-        cell.state = 'miss';
-        playSplashSfx();
-        spawnSplashFx(r, c);
-        haptic('light');
-        addHistoryEntry('me', coordStr, 'miss', 'Мимо');
-        showTaunt('МИМО', pick(TAUNTS.playerMiss), 'miss');
-        isPlayerTurn = false;
-        renderBoards();
-        updateHud();
-        setTimeout(enemyTurn, 1150);
-      } else {
-        const ship = enemyShips[cell.shipId];
-        ship.hits++;
-        if (ship.hits >= ship.len) {
-          ship.sunk = true;
-          ship.cells.forEach(p => {
-            enemyBoard[p.r][p.c].state = 'sunk';
-            spawnExplosionFx(p.r, p.c, true);
-          });
-          markHaloAroundShip(enemyBoard, ship);
-          playExplosionSfx(true);
-          playBubblesSfx();
-          triggerScreenShake(true);
-          haptic('success');
-          addHistoryEntry('me', coordStr, 'sunk', 'Убил!');
-          showTaunt('УБИЛ!', pick(TAUNTS.playerSink), 'sink');
+      enemyFx.launchShell(r, c, true, () => {
+        shotLock = false;
+        if (cell.shipId === null) {
+          cell.state = 'miss';
+          playSplash();
+          enemyFx.splash(r, c);
+          showTaunt('МИМО', pick(TAUNTS.playerMiss), '');
+          isPlayerTurn = false;
+          renderAll();
+          setTimeout(enemyMove, 950);
         } else {
-          cell.state = 'hit';
-          playExplosionSfx(false);
-          spawnExplosionFx(r, c, false);
-          triggerScreenShake(false);
-          haptic('heavy');
-          addHistoryEntry('me', coordStr, 'hit', 'Ранил');
-          showTaunt('РАНИЛ!', pick(TAUNTS.playerHit), 'hit');
+          const ship = enemyShips[cell.shipId];
+          ship.hits++;
+          if (ship.hits >= ship.len) {
+            ship.sunk = true;
+            ship.cells.forEach(p => {
+              enemyBoard[p.r][p.c].state = 'sunk';
+              enemyFx.explode(p.r, p.c, true);
+            });
+            markHalo(enemyBoard, ship);
+            playExplosion(true);
+            playBubbles();
+            shakeScreen(true);
+            haptic('success');
+            showTaunt('УБИЛ!', pick(TAUNTS.playerSink), 'sink');
+          } else {
+            cell.state = 'hit';
+            playExplosion(false);
+            enemyFx.explode(r, c, false);
+            shakeScreen(false);
+            haptic('heavy');
+            showTaunt('РАНИЛ!', pick(TAUNTS.playerHit), 'hit');
+          }
+          renderAll();
+          checkEnd();
         }
-        renderBoards();
-        updateHud();
-        checkVictory();
-      }
+      });
     }
 
-    function enemyTurn() {
-      if (gameOver || isPlayerTurn) return;
+    function enemyMove() {
+      if (phase !== 'battle' || isPlayerTurn) return;
 
       let r, c;
       while (botTargets.length > 0) {
@@ -1342,216 +1598,141 @@
           }
         }
         if (!avail.length) return;
-        const pickCell = pick(avail);
-        r = pickCell.r; c = pickCell.c;
+        const chosen = pick(avail);
+        r = chosen.r; c = chosen.c;
       }
 
-      const cell = myBoard[r][c];
-      const coordStr = `${LETTERS[c]}${r + 1}`;
-
-      if (cell.shipId === null) {
-        cell.state = 'miss';
-        playSplashSfx();
-        addHistoryEntry('enemy', coordStr, 'miss', 'Враг мимо');
-        showTaunt('ВРАГ МИМО', pick(TAUNTS.enemyMiss), 'miss');
-        isPlayerTurn = true;
-        renderBoards();
-        updateHud();
-      } else {
-        const ship = myShips[cell.shipId];
-        ship.hits++;
-        if (ship.hits >= ship.len) {
-          ship.sunk = true;
-          ship.cells.forEach(p => myBoard[p.r][p.c].state = 'sunk');
-          markHaloAroundShip(myBoard, ship);
-          botTargets = [];
-          playExplosionSfx(true);
-          playBubblesSfx();
-          triggerScreenShake(true);
-          haptic('error');
-          addHistoryEntry('enemy', coordStr, 'sunk', 'Твой потоплен');
-          showTaunt('ПРОБИТИЕ!', pick(TAUNTS.enemySink), 'sink');
+      playCannonShot();
+      myFx.launchShell(r, c, false, () => {
+        const cell = myBoard[r][c];
+        if (cell.shipId === null) {
+          cell.state = 'miss';
+          playSplash();
+          myFx.splash(r, c);
+          showTaunt('ВРАГ МИМО', pick(TAUNTS.enemyMiss), '');
+          isPlayerTurn = true;
+          renderAll();
         } else {
-          cell.state = 'hit';
-          playExplosionSfx(false);
-          triggerScreenShake(false);
-          haptic('medium');
-          addHistoryEntry('enemy', coordStr, 'hit', 'Тебя ранили');
-          showTaunt('ПО ТЕБЕ!', pick(TAUNTS.enemyHit), 'hit');
-          [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].forEach(([nr,nc]) => {
-            if (nr>=0 && nr<10 && nc>=0 && nc<10 && myBoard[nr][nc].state === 'empty') {
-              botTargets.push({ r: nr, c: nc });
-            }
-          });
+          const ship = myShips[cell.shipId];
+          ship.hits++;
+          if (ship.hits >= ship.len) {
+            ship.sunk = true;
+            ship.cells.forEach(p => {
+              myBoard[p.r][p.c].state = 'sunk';
+              myFx.explode(p.r, p.c, true);
+            });
+            markHalo(myBoard, ship);
+            botTargets = [];
+            playExplosion(true);
+            playBubbles();
+            shakeScreen(true);
+            haptic('error');
+            showTaunt('ПОТОПИЛИ!', pick(TAUNTS.enemySink), 'sink');
+          } else {
+            cell.state = 'hit';
+            playExplosion(false);
+            myFx.explode(r, c, false);
+            shakeScreen(false);
+            haptic('medium');
+            showTaunt('ПРОБИТИЕ!', pick(TAUNTS.enemyHit), 'hit');
+            [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].forEach(([nr, nc]) => {
+              if (nr>=0 && nr<10 && nc>=0 && nc<10 && myBoard[nr][nc].state === 'empty') {
+                botTargets.push({ r: nr, c: nc });
+              }
+            });
+          }
+          renderAll();
+          if (!checkEnd()) {
+            setTimeout(enemyMove, 1050);
+          }
         }
-        renderBoards();
-        updateHud();
-        if (!checkVictory()) {
-          setTimeout(enemyTurn, 1200);
-        }
-      }
+      });
     }
 
-    function checkVictory() {
-      const enemyAlive = enemyShips.filter(s => !s.sunk).length;
-      const myAlive = myShips.filter(s => !s.sunk).length;
-      if (enemyAlive === 0 || myAlive === 0) {
-        gameOver = true;
-        const win = enemyAlive === 0;
+    function checkEnd() {
+      const eAlive = enemyShips.filter(s => !s.sunk).length;
+      const mAlive = myShips.filter(s => !s.sunk).length;
+      if (eAlive === 0 || mAlive === 0) {
+        phase = 'over';
+        const win = eAlive === 0;
         document.getElementById('endTitle').textContent = win ? 'Чистая победа!' : 'Ты пошёл ко дну';
         document.getElementById('endDesc').textContent = win
-          ? 'Весь вражеский флот кормит рыб. Можно поднимать бокал, адмирал.'
+          ? 'Весь вражеский флот кормит крабов. Отличная работа, адмирал.'
           : 'Твоих кораблей больше нет. Реванш или пойдёшь сушить тельняшку?';
         document.getElementById('endModal').classList.add('open');
+        updateHud();
         return true;
       }
       return false;
     }
 
-    function startNewGame() {
-      const e = placeFleetRandomly();
-      const m = placeFleetRandomly();
-      enemyBoard = e.board; enemyShips = e.ships;
-      myBoard = m.board; myShips = m.ships;
+    // =========================================================================
+    // 10. ПЕРЕКЛЮЧЕНИЕ ФАЗ И КНОПКИ
+    // =========================================================================
+    function initSetupPhase() {
+      phase = 'setup';
       isPlayerTurn = true;
-      gameOver = false;
-      shotCounter = 0;
+      shotLock = false;
       botTargets = [];
-      document.getElementById('shotCount').textContent = '0';
-      document.getElementById('historyList').innerHTML = `
-        <div style="font-size:11px; color:var(--ink-soft); text-align:center; padding-top:24px; font-weight:600;">
-          Пока тихо.<br>Первый залп за тобой.
-        </div>`;
+
+      const myFleet = generateRandomFleet();
+      myBoard = myFleet.board;
+      myShips = myFleet.ships;
+
+      const enFleet = generateRandomFleet();
+      enemyBoard = enFleet.board;
+      enemyShips = enFleet.ships;
+
+      document.getElementById('setupPanel').style.display = 'flex';
+      document.getElementById('enemyBoardCard').classList.add('hidden');
+      document.getElementById('myStage').classList.add('setup-touch');
+      document.getElementById('myBoardTitle').textContent = '⚓ Твоя эскадра (Расстановка)';
+      document.getElementById('myBoardSub').textContent = 'Перетащи или жми «Авто»';
       document.getElementById('endModal').classList.remove('open');
-      renderBoards();
-      updateHud();
-      showTaunt('БОЦМАН', 'Флот расставлен. Командуй выстрел, капитан!', '');
-      setTimeout(resizeCanvas, 50);
+
+      showTaunt('БОЦМАН', 'Расставляй корыта. Тап — поворот, зажми и тяни — перенос.', '');
+      renderAll();
+      setTimeout(() => { myFx.resize(); }, 60);
     }
 
-    // =========================================================================
-    // 6. ГОЛОСОВОЙ ВВОД КООРДИНАТ (МИКРОФОН)
-    // =========================================================================
-    const LETTER_MAP = {
-      'а': 0, 'a': 0, 'антон': 0,
-      'б': 1, 'бэ': 1, 'бе': 1, 'борис': 1, 'b': 1,
-      'в': 2, 'вэ': 2, 'ве': 2, 'v': 2,
-      'г': 3, 'гэ': 3, 'ге': 3, 'g': 3,
-      'д': 4, 'дэ': 4, 'де': 4, 'd': 4,
-      'е': 5, 'ё': 5, 'e': 5,
-      'ж': 6, 'жэ': 6, 'же': 6,
-      'з': 7, 'зэ': 7, 'зе': 7,
-      'и': 8, 'i': 8,
-      'к': 9, 'ка': 9, 'k': 9
-    };
-
-    const NUM_WORDS = {
-      'один': 1, 'единица': 1, 'раз': 1,
-      'два': 2, 'двойка': 2,
-      'три': 3, 'тройка': 3,
-      'четыре': 4, 'четвёрка': 4,
-      'пять': 5, 'пятёрка': 5,
-      'шесть': 6, 'шестёрка': 6,
-      'семь': 7, 'семёрка': 7,
-      'восемь': 8, 'восьмёрка': 8,
-      'девять': 9, 'девятка': 9,
-      'десять': 10, 'десятка': 10
-    };
-
-    function parseSpokenCoord(raw) {
-      const text = raw.toLowerCase().replace(/[-.,!?]/g, ' ').trim();
-      let col = null, row = null;
-
-      // Ищем число цифрой
-      const numMatch = text.match(/\b(10|[1-9])\b/);
-      if (numMatch) row = parseInt(numMatch[1], 10) - 1;
-
-      const tokens = text.split(/\s+/);
-      for (const t of tokens) {
-        if (row === null && NUM_WORDS[t]) row = NUM_WORDS[t] - 1;
-        if (col === null && LETTER_MAP[t] !== undefined) col = LETTER_MAP[t];
-        // Слитный вариант типа "б4" или "к10"
-        const glued = t.match(/^([а-кa-z])(10|[1-9])$/);
-        if (glued && LETTER_MAP[glued[1]] !== undefined) {
-          col = LETTER_MAP[glued[1]];
-          row = parseInt(glued[2], 10) - 1;
-        }
-      }
-      if (col !== null && row !== null && row >= 0 && row < 10) {
-        return { r: row, c: col };
-      }
-      return null;
-    }
-
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition = null;
-    let isListening = false;
-
-    const btnMic = document.getElementById('btnMic');
-    const micLabel = document.getElementById('micLabel');
-
-    btnMic.addEventListener('click', () => {
+    function startBattlePhase() {
       ensureAudio();
-      if (!SpeechRec) {
-        showTaunt('МИКРОФОН', 'В этом WebView нужен серверный STT (подключим на следующем этапе). Пока бей тапом!', 'miss');
-        return;
-      }
-      if (isListening) {
-        try { recognition.stop(); } catch (e) {}
-        return;
-      }
-      recognition = new SpeechRec();
-      recognition.lang = 'ru-RU';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 3;
+      phase = 'battle';
+      isPlayerTurn = true;
+      haptic('success');
 
-      recognition.onstart = () => {
-        isListening = true;
-        btnMic.classList.add('listening');
-        micLabel.textContent = 'Слушаю… назови клетку (напр. «Г 7»)';
-        haptic('light');
-      };
+      document.getElementById('setupPanel').style.display = 'none';
+      document.getElementById('enemyBoardCard').classList.remove('hidden');
+      document.getElementById('myStage').classList.remove('setup-touch');
+      document.getElementById('myBoardTitle').textContent = '⚓ Твоя эскадра';
+      document.getElementById('myBoardSub').textContent = 'Защита сектора';
 
-      recognition.onresult = (e) => {
-        let parsed = null;
-        let heard = '';
-        for (let i = 0; i < e.results[0].length; i++) {
-          const cand = e.results[0][i].transcript;
-          if (!heard) heard = cand;
-          parsed = parseSpokenCoord(cand);
-          if (parsed) break;
-        }
-        if (parsed) {
-          playerShoot(parsed.r, parsed.c);
-        } else {
-          showTaunt('НЕ РАССЛЫШАЛ', `Услышал «${heard}». Говори чётче, морячок: например «Бэ четыре»!`, 'miss');
-        }
-      };
+      showTaunt('БОЙ!', 'Орудия заряжены. Первый залп за тобой, капитан!', '');
+      renderAll();
+      setTimeout(() => {
+        enemyFx.resize();
+        myFx.resize();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 60);
+    }
 
-      recognition.onerror = () => {
-        showTaunt('МИКРОФОН', 'Не удалось поймать голос — проверь доступ к микрофону или бей тапом.', 'miss');
-      };
-
-      recognition.onend = () => {
-        isListening = false;
-        btnMic.classList.remove('listening');
-        micLabel.textContent = 'Сказать координату (напр. «Б 4»)';
-      };
-
-      try { recognition.start(); } catch (e) {}
+    document.getElementById('btnAutoPlace').addEventListener('click', () => {
+      const f = generateRandomFleet();
+      myBoard = f.board;
+      myShips = f.ships;
+      haptic('medium');
+      renderAll();
     });
 
-    // =========================================================================
-    // 7. КНОПКИ УПРАВЛЕНИЯ
-    // =========================================================================
-    document.getElementById('btnSea').addEventListener('click', toggleSeaAmbience);
-    document.getElementById('btnVoice').addEventListener('click', (e) => {
-      voiceEnabled = !voiceEnabled;
-      e.target.classList.toggle('active', voiceEnabled);
-      e.target.textContent = voiceEnabled ? '🔊' : '🔇';
+    document.getElementById('btnStartBattle').addEventListener('click', startBattlePhase);
+    document.getElementById('btnReset').addEventListener('click', initSetupPhase);
+    document.getElementById('btnPlayAgain').addEventListener('click', initSetupPhase);
+    document.getElementById('btnSea').addEventListener('click', toggleSea);
+    document.getElementById('btnSfx').addEventListener('click', (e) => {
+      sfxOn = !sfxOn;
+      e.target.classList.toggle('active', sfxOn);
+      e.target.textContent = sfxOn ? '🔊' : '🔇';
     });
-    document.getElementById('btnRestart').addEventListener('click', startNewGame);
-    document.getElementById('btnPlayAgain').addEventListener('click', startNewGame);
 
     document.getElementById('btnOnline').addEventListener('click', () => {
       document.getElementById('onlineModal').classList.add('open');
@@ -1562,13 +1743,12 @@
     document.getElementById('btnCreateRoom').addEventListener('click', () => {
       const code = document.getElementById('roomCodeInput').value.trim() || ('M-' + Math.floor(100 + Math.random() * 899));
       document.getElementById('roomCodeInput').value = code;
-      showTaunt('ОНЛАЙН', `Каюта ${code} готова к привязке WebSocket-сервера!`, 'miss');
+      showTaunt('ОНЛАЙН', `Каюта ${code} зарезервирована — подключим WebSocket-сервер следующим шагом!`, '');
       document.getElementById('onlineModal').classList.remove('open');
     });
 
-    // Запуск
-    startNewGame();
-    animateFx();
+    // Старт приложения
+    initSetupPhase();
   </script>
 </body>
 </html>
